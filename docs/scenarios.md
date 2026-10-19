@@ -66,11 +66,12 @@ not establish exactly-once network delivery or exactly-once external side effect
 These operator-only mutations require a matching local Origin and are registered
 only when `DEMO_MODE=true`:
 
-- `POST /api/demo/fixtures` accepts `{ "scenario": "success" }`, `transient`, or
-  `permanent`. It creates a synthetic completed refund snapshot and signs an actual
+- `POST /api/demo/fixtures` accepts `{ "scenario": "success" }`, `transient`,
+  `permanent`, or `exhausted`. It creates a synthetic completed refund snapshot and signs an actual
   HTTP request to this API's own loopback webhook listener. Source credentials stay
   on the server. Transient faults fail the first attempt; permanent faults require
-  repair.
+  repair. The exhausted sample fails every automatic attempt until the cycle budget
+  is used. Repair and manual replay then start a fresh cycle with retained history.
 - `POST /api/demo/events/:id/redeliver` sends the original accepted bytes with a
   fresh signature timestamp. It returns the same acceptance receipt and does not
   create a new processing cycle.
@@ -80,8 +81,7 @@ only when `DEMO_MODE=true`:
 
 Viewer and cross-source actions are denied. Callers cannot supply a different
 source, signing credential, or replacement payload. Outside demo mode these routes
-return 404, even with a valid operator session. The console uses the same operations
-when it is added.
+return 404, even with a valid operator session. The console uses these same operations.
 
 ## Reset and cleanup
 

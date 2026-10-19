@@ -85,4 +85,7 @@ export type Detail = typeof Detail.infer;
 export const AttemptPage = type({ items: Attempt.array(), nextOffset: "number | null" });
 export const ReplayPage = type({ items: ReplayRecord.array(), nextOffset: "number | null" });
 export const FixtureResponse = type({ receipt: Receipt });
+export const DemoScenario = type.enumerated("success", "transient", "permanent", "exhausted");
+export type DemoScenario = typeof DemoScenario.infer;
+export const RepairResponse = type({ repaired: "true", refundId: "string" });
 export const ReplayResponse = type({ replay: ReplayRecord });

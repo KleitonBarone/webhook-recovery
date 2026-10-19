@@ -42,6 +42,11 @@ Generated source/operator credentials are in `.local/runs/dev/app.env`, restrict
 to the current Windows user or mode 0600 on Linux. Never commit or copy them into
 the browser bundle. Sign in with `OPERATOR_TOKEN` or `VIEWER_TOKEN`. The console
 uses an HttpOnly session cookie and keeps no credential in browser storage.
+Operators can send successful, temporary-failure, permanent-failure, or exhausted-retry
+samples from the inbox. Select a failed event, repair its demo cause, enter a replay
+reason, and request replay. The detail view preserves earlier attempts and shows
+the completion count. Redelivering the original returns its original acceptance
+receipt. Viewer sessions can inspect events but cannot invoke these controls.
 
 In a second shell, `pnpm sender -- success` sends one local signed event and
 `pnpm sender -- duplicate` concurrently sends the same bytes five times. Both
@@ -74,6 +79,8 @@ labels and process command markers, tears down only that disposable run, and can
 be repeated. It refuses the retained `dev` environment. Never use global Docker
 pruning or WSL shutdown to recover a test run. Pre-existing networks are preserved,
 even if their address pools prevent automatic subnet allocation.
+`env:status` also reports registered process ownership, API/console ports, and
+scratch bytes so leftover runs are visible before another verification starts.
 
 The pinned PostgreSQL image and one pnpm dependency tree are reused during work.
 No custom image builds or builders are required. Temporary containers and volumes

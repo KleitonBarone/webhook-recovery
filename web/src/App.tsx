@@ -9,6 +9,7 @@ import {
   State,
   states,
 } from "../../src/messages.ts";
+import { DemoTools, EventActions } from "./Actions.tsx";
 import { api, HttpError, json } from "./http.ts";
 
 export const stateLabels: Record<State, string> = {
@@ -193,6 +194,7 @@ function Workbench({ session }: { session: Session }) {
       </header>
       <main className={`workspace ${selected ? "has-selection" : ""}`}>
         <section className="inbox-pane" aria-label="Inbox">
+          {session.demo && session.role === "operator" && <DemoTools select={select} />}
           <div className="pane-heading">
             <div>
               <h1>Inbox</h1>
@@ -415,6 +417,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
           Cycle {value.event.cycleNumber}, attempt {value.event.cycleAttempt}
         </span>
       </div>
+      <EventActions key={value.event.cycleNumber} detail={value} session={session} />
       <div className="evidence">
         <section>
           <h3>Current refund snapshot</h3>

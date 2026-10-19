@@ -675,3 +675,62 @@ time {
     transition: none;
   }
 }
+.demo-tools {
+  padding: 20px 24px;
+  border-bottom: 1px solid #dfe6f0;
+  background: #f7f9fd;
+}
+.demo-tools h2 {
+  font-size: 16px;
+  margin: 0 0 5px;
+}
+.sample-buttons,
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sample-buttons {
+  margin-left: -8px;
+}
+.sample-buttons button {
+  text-align: left;
+}
+.recovery-actions {
+  border-top: 1px solid #dfe6f0;
+  padding-top: 22px;
+  margin: 24px 0;
+}
+.recovery-actions h3 {
+  margin: 0 0 10px;
+}
+.recovery-actions form {
+  margin-top: 14px;
+}
+.recovery-actions label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 7px;
+}
+.recovery-actions textarea {
+  width: 100%;
+  font: inherit;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid #bac8dd;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  background: white;
+  color: #182b49;
+}
+.recovery-actions textarea:disabled {
+  background: #f4f6fa;
+}
+.recovery-actions button:disabled {
+  cursor: default;
+}
+.permission-note {
+  color: #596b84;
+  font-size: 13px;
+  margin-top: 22px;
+}

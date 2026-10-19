@@ -12,7 +12,7 @@ and its effect on a synthetic refund projection.
 API/worker entry points, signed durable intake, authenticated inspection, migrations,
 versioned refund processing, bounded retries, audited replay, and verification/cleanup
 runner are available, including [actual worker crash scenarios](docs/scenarios.md).
-The React console provides authenticated inbox and attempt inspection through
+The React console provides authenticated inspection, sample controls, and audited replay through
 `pnpm dev`. See [local setup](docs/setup.md), the [recovery runbook](docs/recovery.md),
 and the remaining [implementation plan](PLAN.md).
 

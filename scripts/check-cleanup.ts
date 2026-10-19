@@ -90,12 +90,15 @@ try {
     const manifest = type({
       processes: type({ marker: "string" }).array(),
       apiPort: "number",
+      "uiPort?": "number",
     }).assert(JSON.parse(text));
     return (
-      manifest.processes.filter((child) => !child.marker.endsWith("-wsl")).length === 2 &&
-      (await readyHttp(`http://127.0.0.1:${manifest.apiPort}/health`))
+      manifest.processes.filter((child) => !child.marker.endsWith("-wsl")).length === 3 &&
+      manifest.uiPort !== undefined &&
+      (await readyHttp(`http://127.0.0.1:${manifest.apiPort}/health`)) &&
+      (await readyHttp(`http://127.0.0.1:${manifest.uiPort}`))
     );
-  });
+  }, 180000);
 } finally {
   child.kill("SIGKILL");
   await exited;
