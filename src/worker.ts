@@ -17,9 +17,9 @@ try {
   console.log(JSON.stringify({ event: "worker_ready", workerId, pid: process.pid }));
   while (!stop.signal.aborted) {
     try {
-      const owned = await claim(connection, workerId, config.leaseMs);
+      const owned = await claim(connection, workerId, config.leaseMs, config.maxAttempts);
       if (owned) {
-        const result = await processClaim(connection, owned);
+        const result = await processClaim(connection, owned, config);
         console.log(
           JSON.stringify({
             event: "processing_finished",

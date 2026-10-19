@@ -8,6 +8,8 @@ const Configuration = type({
   operatorToken: "string >= 24",
   viewerToken: "string >= 24",
   leaseMs: "number.integer >= 100 & number <= 60000",
+  maxAttempts: "number.integer >= 1 & number <= 10",
+  retryBaseMs: "number.integer >= 100 & number <= 60000",
 });
 
 // Configuration never silently falls back to a shared or production database.
@@ -20,6 +22,8 @@ export function configuration(env = process.env) {
     operatorToken: env.OPERATOR_TOKEN,
     viewerToken: env.VIEWER_TOKEN,
     leaseMs: Number(env.WORKER_LEASE_MS ?? 30000),
+    maxAttempts: Number(env.MAX_ATTEMPTS ?? 3),
+    retryBaseMs: Number(env.RETRY_BASE_MS ?? 1000),
   });
   const url = new URL(value.databaseUrl);
   if (

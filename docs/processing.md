@@ -49,3 +49,26 @@ termination at commit boundaries is added in the later crash-evidence milestone.
 
 The locking choices follow PostgreSQL's
 [row-lock and advisory-lock documentation](https://www.postgresql.org/docs/current/explicit-locking.html).
+
+## Automatic retries
+
+`MAX_ATTEMPTS` defaults to three claims per processing cycle, including abandoned
+leases. `RETRY_BASE_MS` defaults to 1,000 milliseconds. Transient synthetic handler
+failures use exponential backoff with 20% jitter and a 60-second maximum delay.
+The worker uses PostgreSQL's clock and atomically stores the retry deadline with
+the failed attempt outcome. Claiming clears the current deadline; the previous
+attempt retains its original `retryAt`. A restart does not reset the schedule.
+
+Permanent failures dead-letter immediately. Exhaustion records
+`retry_budget_exhausted`; the attempt retains the underlying `failureCode`.
+Expired leases also consume the cycle budget, so repeated worker loss cannot
+create unbounded automatic attempts. Database errors roll back the transaction
+and leave the lease for recovery. They do not fabricate successful effects or
+failed-attempt commits. Global attempt numbers never reset.
+
+Persistent synthetic fault rules apply only with `DEMO_MODE=true`. A rule can fail
+the first configured attempts or fail permanently. Their classified outcomes are
+intentional handler simulations, separate from database failures and real worker
+termination. Tests control jitter, compare persisted deadlines, and explicitly
+advance disposable retry/lease metadata to avoid wall-clock sleeps. Authenticated
+demo controls are added in the later scenario milestone.

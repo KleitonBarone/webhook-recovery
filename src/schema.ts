@@ -47,11 +47,20 @@ export const inbox = pgTable(
     leaseUntil: timestamp("lease_until", { withTimezone: true }),
     attemptNumber: integer("attempt_number").notNull().default(0),
     reason: text(),
+    cycleNumber: integer("cycle_number").notNull().default(1),
+    cycleAttempt: integer("cycle_attempt").notNull().default(0),
+    currentReplayId: uuid("current_replay_id"),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
   },
   (table) => [
     uniqueIndex("inbox_source_event").on(table.sourceId, table.eventId),
     index("inbox_source_accepted").on(table.sourceId, table.acceptedAt),
     index("inbox_claim_due").on(table.state, table.leaseUntil, table.acceptedAt),
+    index("inbox_retry_due").on(table.state, table.nextAttemptAt),
+    check(
+      "inbox_retry_schedule",
+      sql`(${table.state} = 'retry_scheduled') = (${table.nextAttemptAt} is not null)`,
+    ),
     check(
       "inbox_processing_lease",
       sql`(${table.state} = 'processing' and ${table.leaseToken} is not null and ${table.leaseUntil} is not null) or (${table.state} <> 'processing' and ${table.leaseToken} is null and ${table.leaseUntil} is null)`,
@@ -79,6 +88,11 @@ export const attempts = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     outcome: attemptOutcome().notNull().default("running"),
     reason: text(),
+    cycleNumber: integer("cycle_number").notNull().default(1),
+    cycleAttempt: integer("cycle_attempt").notNull().default(1),
+    replayId: uuid("replay_id"),
+    retryAt: timestamp("retry_at", { withTimezone: true }),
+    failureCode: text("failure_code"),
   },
   (table) => [uniqueIndex("attempt_event_number").on(table.inboxId, table.number)],
 );
@@ -129,3 +143,20 @@ export const processingReceipts = pgTable("processing_receipts", {
   decision: receiptDecision().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const faultKind = pgEnum("fault_kind", ["transient", "permanent"]);
+export const syntheticFaults = pgTable(
+  "synthetic_faults",
+  {
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id),
+    refundId: text("refund_id").notNull(),
+    kind: faultKind().notNull(),
+    failForAttempts: integer("fail_for_attempts").notNull().default(1),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sourceId, table.refundId] }),
+    check("fault_attempt_bound", sql`${table.failForAttempts} between 1 and 100`),
+  ],
+);

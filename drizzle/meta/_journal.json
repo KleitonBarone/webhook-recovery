@@ -29,6 +29,13 @@
       "when": 1792418529610,
       "tag": "0003_greedy_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792420823491,
+      "tag": "0004_brave_vanisher",
+      "breakpoints": true
     }
   ]
 }
