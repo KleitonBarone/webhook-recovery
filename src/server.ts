@@ -1,10 +1,15 @@
 import Fastify from "fastify";
+import type { Configuration } from "./config.js";
 import type { Database } from "./database.js";
+import { demoRoutes } from "./demo.js";
 import { RequestError } from "./errors.js";
 import { intakeRoutes } from "./intake.js";
 import { operatorRoutes } from "./operator.js";
 
-export function createServer(connection: Database) {
+export function createServer(
+  connection: Database,
+  options: Pick<Configuration, "demo"> = { demo: false },
+) {
   const app = Fastify({
     bodyLimit: 65536,
     logger: {
@@ -45,6 +50,7 @@ export function createServer(connection: Database) {
     return reply.code(code).send({ error: message });
   });
   intakeRoutes(app, connection);
-  operatorRoutes(app, connection);
+  operatorRoutes(app, connection, options.demo);
+  if (options.demo) demoRoutes(app, connection);
   return app;
 }

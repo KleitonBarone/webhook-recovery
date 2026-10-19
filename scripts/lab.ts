@@ -13,6 +13,7 @@ import { sources } from "../src/schema.js";
 import { runSender } from "../src/sender.js";
 import { verifyClaims } from "../test/claims.integration.js";
 import { verifyCrashes } from "../test/crash.integration.js";
+import { verifyDemo } from "../test/demo.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
 import { verifyOperator } from "../test/operator.integration.js";
 import { verifyProcessing, verifyWorkerProcess } from "../test/processing.integration.js";
@@ -26,6 +27,7 @@ import {
   execute,
   readyHttp,
   root,
+  runtimeInfo,
   until,
 } from "./runtime.js";
 
@@ -411,6 +413,8 @@ async function verify() {
     logs?: string;
     workerLogs?: string;
     crashes?: Awaited<ReturnType<typeof verifyCrashes>>;
+    demos?: Awaited<ReturnType<typeof verifyDemo>>;
+    environment?: Awaited<ReturnType<typeof runtimeInfo>>;
     databaseLogs?: string;
   } = {
     run: id,
@@ -431,6 +435,16 @@ async function verify() {
   try {
     run = await startDatabase(id);
     await prepare(run);
+    const inspectedDatabase = database(configuration(await environment(run)));
+    try {
+      const [version] = type({ version: "string" })
+        .array()
+        .assert(await inspectedDatabase.client`select version() as version`);
+      if (!version) throw new Error("PostgreSQL version unavailable");
+      report.environment = await runtimeInfo(version.version);
+    } finally {
+      await inspectedDatabase.client.end();
+    }
     report.checks.push("migrate-upgrade-with-seeded-data-and-idempotent-seed");
     if (process.env.LAB_FAIL_AT === "startup") throw new Error("Injected startup failure");
     await startProcess(run, "api", "src/api.ts");
@@ -511,6 +525,8 @@ async function verify() {
     await startProcess(currentRun, "worker", "src/worker.ts");
     await verifyWorkerProcess(base, config);
     report.checks.push("real-worker-process-end-to-end");
+    report.demos = await verifyDemo(base, config);
+    report.checks.push("demo-gates-signed-http-delivery-redelivery-repair-and-replay");
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
     if (process.env.LAB_FAIL_AT === "interrupt") {
       controller.abort();
@@ -595,12 +611,22 @@ else if (command === "check") {
   );
   console.log((await docker(["volume", "ls", "--filter", "label=recovery.run"])).stdout);
   console.log({ unfinished: await readdir(runs).catch(() => []) });
-} else if (command === "cleanup") {
-  const id = process.argv[process.argv.indexOf("--run") + 1];
+} else if (command === "cleanup" || command === "demo-reset") {
+  const optionIndex = process.argv.indexOf("--run");
+  const id = optionIndex < 0 ? undefined : process.argv[optionIndex + 1];
   if (!id || id === "dev") throw new Error("Provide --run <disposable-run-id>");
   const found = await readFile(join(location(id), "manifest.json"), "utf8").catch(() => null);
-  if (found) await cleanup(await load(id));
-  console.log(`Cleanup verified for ${id}`);
+  if (found) {
+    const run = await load(id);
+    if (command === "demo-reset" && (await environment(run)).DEMO_MODE !== "true")
+      throw new Error("Reset requires an explicitly disposable demo environment");
+    await cleanup(run);
+  }
+  console.log(
+    command === "demo-reset"
+      ? JSON.stringify({ reset: true, run: id, method: "disposable_environment_teardown" })
+      : `Cleanup verified for ${id}`,
+  );
 } else if (command === "db-up" || command === "dev") {
   const exists = await readFile(join(location("dev"), "manifest.json"), "utf8").catch(() => null);
   const run = exists ? await load("dev") : await startDatabase("dev");

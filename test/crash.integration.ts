@@ -118,6 +118,8 @@ export async function verifyCrashes(base: string, config: Configuration, harness
     assert.equal(uncommitted.completionCount, 0);
     assert.equal(uncommitted.receiptCount, 0);
     assert.equal(uncommitted.projectionVersion, null);
+    if (process.env.LAB_FAIL_AT === "crash_barrier")
+      throw new Error("Injected crash-barrier failure");
     await harness.stop(preWorker, true);
     const preRecoveryWorker = await harness.start("pre-recovery");
     const recoveredBefore = await processed(before.receipt.id);

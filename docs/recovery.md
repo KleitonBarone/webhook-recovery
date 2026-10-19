@@ -24,8 +24,8 @@ record lost leases rather than a fabricated successful or failed handler commit.
 Accepted bytes cannot be repaired in place. A sender must issue a valid newer
 snapshot; replaying an older event can then legitimately finish as stale.
 
-The current integration fixtures set and clear persistent synthetic faults.
-Authenticated simulator controls arrive in the next scenario slice. A repair
+In demo mode, use the [authenticated simulator controls](scenarios.md) to send a
+permanent-failure sample, redeliver it, and repair its synthetic cause. A repair
 affects subsequent attempts and does not erase history or automatically replay.
 
 For an existing terminal event, this PowerShell example reads the private local

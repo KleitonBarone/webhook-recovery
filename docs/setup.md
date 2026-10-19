@@ -79,7 +79,9 @@ are removed after each verification. Record image/disk usage when the developmen
 task ends and remove a task-pulled image only when no retained service needs it.
 
 `pnpm verify:cleanup` performs the infrastructure lifecycle acceptance exercise:
-two successful runs, startup/test failures, a handled interruption, then an abrupt
-coordinator termination followed by cleanup twice. It asserts the before/after
-container, volume, and network inventories match. Run it when changing lifecycle
-behavior; normal CI runs the ordinary isolated verification once.
+two successful runs, startup/test failures, a handled interruption, and failure
+while an experiment worker is paused before commit. It also kills a coordinator,
+resets that disposable demo, and runs cleanup twice. It asserts the before/after
+Node/WSL process, container, volume, and network inventories match. Run it when
+changing lifecycle behavior; normal CI runs isolated verification once. See the
+[finite scenario guide](scenarios.md) for the demo controls and reset boundary.
