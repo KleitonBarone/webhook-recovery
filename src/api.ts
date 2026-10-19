@@ -10,3 +10,4 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => void app.close());
 }
 await app.listen({ host: "127.0.0.1", port: config.port });
+console.log(JSON.stringify({ event: "api_ready", pid: process.pid }));

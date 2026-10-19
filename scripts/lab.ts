@@ -270,18 +270,28 @@ async function startProcess(
   children.set(child.pid, child);
   run.processes.push({ pid: child.pid, marker });
   await save(run);
-  if (script === "src/worker.ts") {
+  const readyEvent =
+    script === "src/worker.ts"
+      ? "worker_ready"
+      : script === "src/api.ts"
+        ? "api_ready"
+        : script === "web/dev.ts"
+          ? "console_ready"
+          : undefined;
+  if (readyEvent) {
     const ready = `"pid":${child.pid}`;
-    await until(async () =>
-      (
+    await until(async () => {
+      if (child.exitCode !== null || child.signalCode !== null)
+        throw new Error(`Owned ${name} exited before readiness; inspect its bounded log`);
+      return (
         await readFile(join(location(run.id), `${name}.log`), "utf8").catch((error: unknown) => {
           if (error instanceof Error && "code" in error && error.code === "ENOENT") return "";
           throw error;
         })
       )
         .split("\n")
-        .some((line) => line.includes('"event":"worker_ready"') && line.includes(ready)),
-    );
+        .some((line) => line.includes(`"event":"${readyEvent}"`) && line.includes(ready));
+    });
   }
   return child;
 }
