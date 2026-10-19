@@ -1,20 +1,33 @@
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import type { Configuration } from "./config.js";
 import type { Database } from "./database.js";
 import { demoRoutes } from "./demo.js";
 import { RequestError } from "./errors.js";
 import { intakeRoutes } from "./intake.js";
+import { diagnostic } from "./observability.js";
 import { operatorRoutes } from "./operator.js";
 
 export function createServer(
   connection: Database,
   options: Pick<Configuration, "demo"> = { demo: false },
+  logStream?: { write(line: string): void },
 ) {
   const app = Fastify({
     bodyLimit: 65536,
+    logController: new LogController({ disableRequestLogging: true }),
     logger: {
       redact: ["req.headers", "res.headers", "password", "token", "signature"],
+      ...(logStream ? { stream: logStream } : {}),
     },
+  });
+  app.setNotFoundHandler((_request, reply) => reply.code(404).send({ error: "Route not found" }));
+  app.addHook("onResponse", async (request, reply) => {
+    request.log.info({
+      event: "http_completed",
+      method: request.method,
+      route: request.routeOptions.url ?? "unmatched",
+      statusCode: reply.statusCode,
+    });
   });
   app.get("/health", async () => {
     await connection.client`select 1`;
@@ -27,19 +40,7 @@ export function createServer(
       error instanceof Error && "statusCode" in error && typeof error.statusCode === "number"
         ? error.statusCode
         : 500;
-    const cause = error instanceof Error && error.cause ? error.cause : error;
-    const failureCode =
-      cause && typeof cause === "object" && "code" in cause ? cause.code : undefined;
-    request.log.error(
-      {
-        failure: error instanceof Error ? error.name : "UnknownError",
-        code:
-          typeof failureCode === "string" && /^[A-Z0-9_]{1,32}$/.test(failureCode)
-            ? failureCode
-            : undefined,
-      },
-      "Request failed",
-    );
+    request.log.error({ event: "request_failed", failure: diagnostic(error) }, "Request failed");
     const code = status >= 400 && status < 500 ? status : 500;
     const message =
       status === 413

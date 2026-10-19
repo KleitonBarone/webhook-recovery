@@ -2,6 +2,7 @@ import { type } from "arktype";
 import { and, eq } from "drizzle-orm";
 import type { Database } from "./database.js";
 import { RequestError } from "./errors.js";
+import { observe } from "./observability.js";
 import { inbox, replayRequests } from "./schema.js";
 
 export const ReplayInput = type({
@@ -21,7 +22,7 @@ export async function replayEvent(
   if (!UUID.allows(id)) throw new RequestError(400, "Invalid event ID");
   const reason = input.reason.trim();
   if (!reason) throw new RequestError(400, "A replay reason is required");
-  return connection.db.transaction(async (tx) => {
+  const result = await connection.db.transaction(async (tx) => {
     const [event] = await tx
       .select()
       .from(inbox)
@@ -39,7 +40,7 @@ export async function replayEvent(
       return found;
     }
     const [existing] = await tx.select().from(replayRequests).where(key).limit(1);
-    if (existing) return original(existing);
+    if (existing) return { replay: original(existing), duplicate: true };
     if (event.state !== "dead_lettered")
       throw new RequestError(409, "Only terminal failures can be replayed");
     const [created] = await tx
@@ -59,7 +60,7 @@ export async function replayEvent(
     if (!created) {
       const [winner] = await tx.select().from(replayRequests).where(key).limit(1);
       if (!winner) throw new Error("Replay key winner disappeared");
-      return original(winner);
+      return { replay: original(winner), duplicate: true };
     }
     await tx
       .update(inbox)
@@ -72,6 +73,13 @@ export async function replayEvent(
         currentReplayId: created.id,
       })
       .where(eq(inbox.id, id));
-    return created;
+    return { replay: created, duplicate: false };
   });
+  observe(result.duplicate ? "replay_duplicate" : "replay_requested", {
+    sourceId: scope.sourceId,
+    inboxId: id,
+    replayId: result.replay.id,
+    cycleNumber: result.replay.cycleNumber,
+  });
+  return result.replay;
 }

@@ -4,6 +4,7 @@ import type { FastifyInstance } from "fastify";
 import { decodeEvent, verifySignature } from "./contract.js";
 import { type Database, hash } from "./database.js";
 import { RequestError } from "./errors.js";
+import { observe } from "./observability.js";
 import { inbox, sources } from "./schema.js";
 
 export async function accept(
@@ -45,8 +46,15 @@ export async function accept(
         .limit(1)
     )[0];
   if (!existing) throw new Error("Accepted event disappeared");
-  if (existing.bodyHash !== digest || existing.raw !== raw)
+  if (existing.bodyHash !== digest || existing.raw !== raw) {
+    observe("conflicting", { sourceId, inboxId: existing.id, eventId: existing.eventId });
     throw new RequestError(409, "Event identity already has different bytes");
+  }
+  observe(inserted ? "accepted" : "duplicate", {
+    sourceId,
+    inboxId: existing.id,
+    eventId: existing.eventId,
+  });
   return {
     receipt: {
       id: existing.id,

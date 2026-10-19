@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, gt, lte, or, sql } from "drizzle-orm";
 import type { Database } from "./database.js";
+import { observe } from "./observability.js";
 import { attempts, inbox } from "./schema.js";
 
 type Transaction = Parameters<Parameters<Database["db"]["transaction"]>[0]>[0];
@@ -28,7 +29,7 @@ export async function claim(
     maxAttempts > 10
   )
     throw new Error("Invalid claim settings");
-  return connection.db.transaction(async (tx) => {
+  const result = await connection.db.transaction(async (tx) => {
     const [event] = await tx
       .select()
       .from(inbox)
@@ -68,7 +69,7 @@ export async function claim(
           nextAttemptAt: null,
         })
         .where(eq(inbox.id, event.id));
-      return null;
+      return { exhausted: event };
     }
     const attemptId = randomUUID();
     const number = event.attemptNumber + 1;
@@ -98,6 +99,19 @@ export async function claim(
     if (!owned) throw new Error("Claimed event disappeared");
     return { event: owned, attemptId };
   });
+  if (result && "exhausted" in result) {
+    observe("dead_lettered", {
+      workerId,
+      sourceId: result.exhausted.sourceId,
+      inboxId: result.exhausted.id,
+      eventId: result.exhausted.eventId,
+      attemptId: result.exhausted.leaseToken,
+      cycleNumber: result.exhausted.cycleNumber,
+      cycleAttempt: result.exhausted.cycleAttempt,
+    });
+    return null;
+  }
+  return result;
 }
 export type Claim = NonNullable<Awaited<ReturnType<typeof claim>>>;
 

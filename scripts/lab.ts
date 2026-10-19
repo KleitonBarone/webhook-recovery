@@ -9,6 +9,7 @@ import { type } from "arktype";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { configuration } from "../src/config.js";
 import { database, migrateDatabase, seedDatabase } from "../src/database.js";
+import { diagnostic } from "../src/observability.js";
 import { sources } from "../src/schema.js";
 import { runSender } from "../src/sender.js";
 import { verifyClaims } from "../test/claims.integration.js";
@@ -16,6 +17,7 @@ import { verifyConsole } from "../test/console.integration.js";
 import { verifyCrashes } from "../test/crash.integration.js";
 import { verifyDemo } from "../test/demo.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
+import { verifyRedaction } from "../test/observability.integration.js";
 import { verifyOperator } from "../test/operator.integration.js";
 import { verifyProcessing, verifyWorkerProcess } from "../test/processing.integration.js";
 import { verifyRecovery } from "../test/recovery.integration.js";
@@ -508,6 +510,8 @@ async function verify() {
     report.checks.push("signed-intake-concurrency-conflicts-restart-database-failure");
     await verifyOperator(base, config, accepted);
     report.checks.push("operator-cookie-origin-expiry-source-permissions-bounded-inspection");
+    await verifyRedaction(config);
+    report.checks.push("structured-log-redaction-in-headers-queries-bodies-and-errors");
     await stopProcesses(currentRun);
     await startProcess(currentRun, "api", "src/api.ts");
     await until(() => readyHttp(`${base}/health`));
@@ -579,7 +583,7 @@ async function verify() {
     }
     if (controller.signal.aborted) abort();
   } catch (error) {
-    report.error = error instanceof Error ? error.message : "Verification failed";
+    report.error = diagnostic(error);
     process.exitCode = 1;
   } finally {
     process.off("SIGINT", onSignal);

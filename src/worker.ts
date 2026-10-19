@@ -3,6 +3,7 @@ import { setTimeout } from "node:timers/promises";
 import { claim } from "./claims.js";
 import { configuration } from "./config.js";
 import { database } from "./database.js";
+import { diagnostic, observe } from "./observability.js";
 import { processClaim } from "./processing.js";
 import { workerPause } from "./worker-pause.js";
 
@@ -21,11 +22,23 @@ try {
     try {
       const owned = await claim(connection, workerId, config.leaseMs, config.maxAttempts);
       if (owned) {
+        const correlation = {
+          workerId,
+          inboxId: owned.event.id,
+          eventId: owned.event.eventId,
+          sourceId: owned.event.sourceId,
+          attemptId: owned.attemptId,
+          replayId: owned.event.currentReplayId,
+          cycleNumber: owned.event.cycleNumber,
+          cycleAttempt: owned.event.cycleAttempt,
+        };
+        observe("attempt_claimed", correlation);
         await pause("claimed", owned);
         const result = await processClaim(connection, owned, config, Math.random, () =>
           pause("before_commit", owned),
         );
         await pause("after_commit", owned);
+        observe(result.state, correlation);
         console.log(
           JSON.stringify({
             event: "processing_finished",
@@ -37,14 +50,11 @@ try {
         );
       } else await setTimeout(100, undefined, { signal: stop.signal }).catch(() => {});
     } catch (error) {
-      const cause = error instanceof Error && error.cause ? error.cause : error;
-      const code = cause && typeof cause === "object" && "code" in cause ? cause.code : undefined;
       console.error(
         JSON.stringify({
           event: "processing_transaction_failed",
           workerId,
-          failure: error instanceof Error ? error.name : "unknown",
-          code: typeof code === "string" && /^[A-Z0-9_]{1,32}$/.test(code) ? code : undefined,
+          failure: diagnostic(error),
         }),
       );
       await setTimeout(250, undefined, { signal: stop.signal }).catch(() => {});
