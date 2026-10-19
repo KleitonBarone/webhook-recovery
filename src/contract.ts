@@ -40,7 +40,7 @@ export function verifySignature(body: Buffer, header: unknown, secret: string, n
 }
 export function decodeEvent(body: Buffer) {
   try {
-    const raw = new TextDecoder("utf-8", { fatal: true }).decode(body);
+    const raw = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(body);
     return { payload: Event.assert(JSON.parse(raw)), raw };
   } catch {
     throw new RequestError(400, "Invalid event payload");

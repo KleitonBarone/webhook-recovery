@@ -9,6 +9,8 @@ import { type } from "arktype";
 import { configuration } from "../src/config.js";
 import { database, migrateDatabase, seedDatabase } from "../src/database.js";
 import { sources } from "../src/schema.js";
+import { runSender } from "../src/sender.js";
+import { verifyIntake } from "../test/intake.integration.js";
 import { availablePort, availableSubnet, docker, execute, root, until } from "./runtime.js";
 
 const runs = join(root, ".local", "runs");
@@ -312,6 +314,15 @@ async function verify() {
       return (await fetch(`http://127.0.0.1:${apiPort}/health`)).ok;
     });
     report.checks.push("real-http-database-readiness");
+    const base = `http://127.0.0.1:${apiPort}`;
+    const currentRun = run;
+    await verifyIntake(base, configuration(await environment(run)), async () => {
+      await stopProcesses(currentRun);
+      await startProcess(currentRun, "api", "src/api.ts");
+      await startProcess(currentRun, "worker", "src/worker.ts");
+      await until(async () => (await fetch(`${base}/health`)).ok);
+    });
+    report.checks.push("signed-intake-concurrency-conflicts-restart-database-failure");
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
     if (process.env.LAB_FAIL_AT === "interrupt") {
       controller.abort();
@@ -400,4 +411,11 @@ else if (command === "migrate" || command === "seed") {
   } finally {
     await connection.client.end();
   }
+} else if (command === "sender") {
+  const run = await load("dev");
+  await runSender(
+    `http://127.0.0.1:${run.apiPort}`,
+    configuration(await environment(run)),
+    process.argv[3] ?? "success",
+  );
 } else throw new Error("Unknown lab command");
