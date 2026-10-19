@@ -181,9 +181,9 @@ showing failure investigation and recovery; avoid exhaustive UI snapshots.
 - [ ] Prove repeated verification and cleanup leave no temporary services,
   databases, volumes, or accumulating scratch artifacts behind.
 - [ ] Record an English walkthrough showing failure, duplicate suppression, and replay.
-- [ ] Write a case study explaining acceptance versus processing, transaction
+- [x] Write a case study explaining acceptance versus processing, transaction
   boundaries, stale-event policy, and known limits.
-- [ ] Publish a modest measured workload with revision, hardware, environment,
+- [x] Publish a modest measured workload with revision, hardware, environment,
   fixture count, concurrency, timing validity, and raw results.
 
 Keep latency measurements separate from correctness assertions. A finite local

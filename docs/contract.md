@@ -54,4 +54,6 @@ cannot supply another source. `nextOffset` is null at the page limit/end.
 `GET /api/events/:id` returns the accepted event and original bytes as UTF-8 text.
 `GET /api/events/:id/receipt` returns its stable acceptance receipt. A permitted
 viewer can inspect; another source sees 404. Missing, expired, or disabled-source
-sessions receive 401. Processing attempts and replay are added in subsequent PRs.
+sessions receive 401. Event detail includes processing attempts and replay history;
+the bounded `/attempts` and `/replays` endpoints provide older entries. See the
+[recovery protocol](processing.md#manual-replay).
