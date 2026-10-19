@@ -57,9 +57,23 @@ export function diagnostic(error: unknown) {
     "Injected test failure",
     "Verification interrupted",
     "Injected crash-barrier failure",
+    "Injected browser failure",
   ]);
   if (error instanceof Error && controlled.has(error.message)) return error.message;
-  const name = error instanceof Error && /^[A-Za-z]{1,50}$/.test(error.name) ? error.name : "Error";
+  const names = new Set([
+    "Error",
+    "TypeError",
+    "SyntaxError",
+    "RangeError",
+    "ReferenceError",
+    "URIError",
+    "EvalError",
+    "AggregateError",
+    "AssertionError",
+    "PostgresError",
+    "DrizzleQueryError",
+  ]);
+  const name = error instanceof Error && names.has(error.name) ? error.name : "Error";
   const cause = error instanceof Error && error.cause ? error.cause : error;
   const code = cause && typeof cause === "object" && "code" in cause ? cause.code : undefined;
   return typeof code === "string" && /^[A-Z0-9_]{1,10}$/.test(code) ? `${name} (${code})` : name;

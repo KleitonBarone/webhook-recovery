@@ -4,8 +4,8 @@ An incoming webhook recovery lab. It accepts signed events into a
 durable inbox, processes them asynchronously, and gives an operator a way to
 investigate and recover failed processing.
 
-The local lab will send duplicate events, deliver older versions late, and stop a
-worker at defined failure boundaries. A small console will show the event history
+The local lab sends duplicate events, delivers older versions late, and stops a
+worker at defined failure boundaries. The console shows the event history
 and its effect on a synthetic refund projection.
 
 **Status: implementation in progress.** The isolated local PostgreSQL environment,
@@ -20,6 +20,7 @@ Use Node 24.20.0, pnpm 11.23.0, and Docker/Compose in WSL Ubuntu on Windows:
 
 ```powershell
 pnpm install --frozen-lockfile
+pnpm browser:install
 pnpm check
 pnpm verify
 ```

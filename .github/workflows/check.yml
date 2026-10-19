@@ -17,6 +17,7 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm browser:install --with-deps
       - run: pnpm check
       - run: pnpm verify
       - uses: actions/upload-artifact@v4

@@ -21,14 +21,14 @@ async function inventory() {
             [
               "-NoProfile",
               "-Command",
-              "Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'node.exe' -and $_.CommandLine -match '--title=webhook-recovery-') -or ($_.Name -eq 'wsl.exe' -and $_.CommandLine -match 'webhook-recovery-(dev|[a-f0-9]{16})-wsl') } | Sort-Object ProcessId | ForEach-Object { $_.ProcessId }",
+              "Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'node.exe' -and $_.CommandLine -match '--title=webhook-recovery-') -or ($_.Name -eq 'wsl.exe' -and $_.CommandLine -match 'webhook-recovery-(dev|[a-f0-9]{16})-wsl') -or ($_.CommandLine -match '--recovery-run=webhook-recovery-[a-f0-9]{16}-browser') } | Sort-Object ProcessId | ForEach-Object { $_.ProcessId }",
             ],
             { windowsHide: true },
           )
         ).stdout.trim()
       : (await execute("ps", ["-eo", "args="])).stdout
           .split("\n")
-          .filter((line) => /--title=webhook-recovery-/.test(line))
+          .filter((line) => /--title=webhook-recovery-|--recovery-run=webhook-recovery-/.test(line))
           .sort()
           .join("\n");
   return [...resources, processes];
@@ -39,8 +39,12 @@ const failureReasons = {
   test: "Injected test failure",
   interrupt: "Verification interrupted",
   crash_barrier: "Injected crash-barrier failure",
+  browser: "Injected browser failure",
 };
-for (const fault of ["", "", "startup", "test", "interrupt", "crash_barrier"] as const) {
+const faults = process.argv.includes("--browser-only")
+  ? (["", "browser"] as const)
+  : (["", "", "startup", "test", "interrupt", "crash_barrier", "browser"] as const);
+for (const fault of faults) {
   let result: { stdout: string; stderr: string };
   let exitCode = 0;
   try {
@@ -69,7 +73,7 @@ for (const fault of ["", "", "startup", "test", "interrupt", "crash_barrier"] as
 const before = await readdir(runRoot);
 const child = spawn(process.execPath, [...args, "verify"], {
   cwd: root,
-  env: { ...process.env, LAB_FAIL_AT: "hold" },
+  env: { ...process.env, LAB_FAIL_AT: "browser_hold" },
   windowsHide: true,
   stdio: "ignore",
 });
@@ -95,7 +99,7 @@ try {
       "uiPort?": "number",
     }).assert(JSON.parse(text));
     return (
-      manifest.processes.filter((child) => !child.marker.endsWith("-wsl")).length === 3 &&
+      manifest.processes.some((child) => child.marker.endsWith("-browser")) &&
       manifest.uiPort !== undefined &&
       (await readyHttp(`http://127.0.0.1:${manifest.apiPort}/health`)) &&
       (await readyHttp(`http://127.0.0.1:${manifest.uiPort}`))

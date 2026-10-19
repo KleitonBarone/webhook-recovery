@@ -162,12 +162,12 @@ exactly-once network delivery or arbitrary external side effects.
 
 ### 4. Investigation console and focused verification
 
-- [ ] Build an event list with bounded filtering and an event/attempt detail view.
-- [ ] Show acceptance, processing status, failure reason, and the next action.
-- [ ] Add local simulator controls and a permitted replay action with a reason.
-- [ ] Add structured logs and bounded counters for accepted, duplicate, processed,
+- [x] Build an event list with bounded filtering and an event/attempt detail view.
+- [x] Show acceptance, processing status, failure reason, and the next action.
+- [x] Add local simulator controls and a permitted replay action with a reason.
+- [x] Add structured logs and bounded counters for accepted, duplicate, processed,
   retried, stale, and dead-lettered events. Redact credentials and payloads by default.
-- [ ] Verify operator permissions, raw-body signing, concurrent intake, claim
+- [x] Verify operator permissions, raw-body signing, concurrent intake, claim
   fencing, receipt/effect atomicity, ordering policy, and replay behavior.
 
 Use real PostgreSQL tests for transaction races and crash boundaries, plus small

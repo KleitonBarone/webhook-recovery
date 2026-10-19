@@ -12,6 +12,7 @@ import { database, migrateDatabase, seedDatabase } from "../src/database.js";
 import { diagnostic } from "../src/observability.js";
 import { sources } from "../src/schema.js";
 import { runSender } from "../src/sender.js";
+import { verifyBrowser } from "../test/browser.integration.js";
 import { verifyClaims } from "../test/claims.integration.js";
 import { verifyConsole } from "../test/console.integration.js";
 import { verifyCrashes } from "../test/crash.integration.js";
@@ -26,6 +27,7 @@ import { verifyRetries } from "../test/retries.integration.js";
 import {
   availablePort,
   availableSubnet,
+  browserProfilePath,
   docker,
   execute,
   readyHttp,
@@ -43,7 +45,7 @@ const Manifest = type({
   project: "string",
   disposable: "boolean",
   created: "string",
-  processes: type({ pid: "number.integer", marker: "string" }).array(),
+  processes: type({ pid: "number.integer", marker: "string", "profile?": "string" }).array(),
   containers: "string[]",
   volumes: "string[]",
   apiPort: "number.integer",
@@ -106,6 +108,7 @@ async function ownedProcess(pid: number, marker: string) {
       ],
       { windowsHide: true },
     );
+    if (marker.endsWith("-browser")) return stdout.includes(`--recovery-run=${marker}`);
     return marker.endsWith("-wsl")
       ? stdout.includes("--exec bash") && stdout.includes(marker)
       : stdout.includes(`--title=${marker}`);
@@ -120,12 +123,31 @@ async function stopProcesses(run: Manifest, preserveWsl = true) {
     if (preserveWsl && child.marker.endsWith("-wsl")) continue;
     if (await ownedProcess(child.pid, child.marker)) {
       children.get(child.pid)?.stdin?.end();
-      process.kill(child.pid, "SIGTERM");
+      try {
+        if (child.marker.endsWith("-browser") && process.platform === "win32")
+          await execute("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+            windowsHide: true,
+            timeout: 5000,
+          });
+        else if (child.marker.endsWith("-browser")) process.kill(-child.pid, "SIGTERM");
+        else process.kill(child.pid, "SIGTERM");
+      } catch (error) {
+        if (await ownedProcess(child.pid, child.marker)) throw error;
+      }
       await until(async () => !(await ownedProcess(child.pid, child.marker)), 5000).catch(
         async () => {
           if (await ownedProcess(child.pid, child.marker)) process.kill(child.pid, "SIGKILL");
         },
       );
+    }
+    if (child.profile) {
+      if (!child.marker.endsWith("-browser")) throw new Error("Profile without browser ownership");
+      await rm(browserProfilePath(child.profile), {
+        recursive: true,
+        force: true,
+        maxRetries: 20,
+        retryDelay: 50,
+      });
     }
     children.delete(child.pid);
   }
@@ -411,10 +433,23 @@ async function retainReports() {
   );
   files.sort((a, b) => b.info.mtimeMs - a.info.mtimeMs);
   let size = 0;
+  const kept = new Set<string>();
   for (const [index, file] of files.entries()) {
-    size += file.info.size;
-    if (index >= 5 || size > 100 * 1024 * 1024) await rm(file.path);
+    const imagePath = file.path.replace(/\.json$/, ".png");
+    const imageInfo = await stat(imagePath).catch(() => null);
+    size += file.info.size + (imageInfo?.size ?? 0);
+    if (index >= 5 || size > 100 * 1024 * 1024) {
+      await rm(file.path);
+      await rm(imagePath, { force: true });
+    } else kept.add(file.path.replace(/\.json$/, ""));
   }
+  for (const entry of entries)
+    if (
+      entry.isFile() &&
+      /^[a-f0-9]{16}\.png$/.test(entry.name) &&
+      !kept.has(join(reports, entry.name.replace(/\.png$/, "")))
+    )
+      await rm(join(reports, entry.name));
 }
 async function diskBytes(path: string): Promise<number> {
   const entries = await readdir(path, { withFileTypes: true }).catch(() => []);
@@ -451,6 +486,8 @@ async function verify() {
     workerLogs?: string;
     crashes?: Awaited<ReturnType<typeof verifyCrashes>>;
     demos?: Awaited<ReturnType<typeof verifyDemo>>;
+    browser?: Awaited<ReturnType<typeof verifyBrowser>>;
+    browserScreenshot?: string;
     environment?: Awaited<ReturnType<typeof runtimeInfo>>;
     databaseLogs?: string;
   } = {
@@ -569,6 +606,31 @@ async function verify() {
     const consoleBase = await startConsole(currentRun);
     await verifyConsole(consoleBase, config, report.demos[0]?.receipt.id, location(currentRun.id));
     report.checks.push("console-readiness-same-origin-session-proxy-and-private-file-denial");
+    report.browser = await verifyBrowser(consoleBase, config, location(currentRun.id), {
+      signal: controller.signal,
+      started: async (pid, marker, profile) => {
+        browserProfilePath(profile);
+        if (marker !== `webhook-recovery-${currentRun.id}-browser`)
+          throw new Error("Browser ownership mismatch");
+        currentRun.processes.push({ pid, marker, profile });
+        await save(currentRun);
+      },
+      stopped: async (pid) => {
+        const child = currentRun.processes.find((entry) => entry.pid === pid);
+        if (!child?.profile || !child.marker.endsWith("-browser"))
+          throw new Error("Browser registration missing");
+        if (await ownedProcess(pid, child.marker)) throw new Error("Browser process still alive");
+        await rm(browserProfilePath(child.profile), {
+          recursive: true,
+          force: true,
+          maxRetries: 20,
+          retryDelay: 50,
+        });
+        currentRun.processes = currentRun.processes.filter((entry) => entry.pid !== pid);
+        await save(currentRun);
+      },
+    });
+    report.checks.push("browser-exhaustion-investigation-repair-replay-history-and-permissions");
     if (process.env.LAB_FAIL_AT === "hold")
       console.log(JSON.stringify({ event: "lab_ready", run: id, console: consoleBase }));
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
@@ -615,10 +677,20 @@ async function verify() {
         .join("\n")
         .slice(-16384);
     try {
-      if (run) await cleanup(run);
-      else if (await readFile(join(location(id), "manifest.json"), "utf8").catch(() => null))
-        await cleanup(await load(id));
-      report.cleaned = true;
+      try {
+        const screenshot = join(location(id), "browser-failure.png");
+        const screenshotInfo = await stat(screenshot).catch(() => null);
+        if (screenshotInfo && screenshotInfo.size <= 2 * 1024 * 1024) {
+          await mkdir(reports, { recursive: true });
+          await copyFile(screenshot, join(reports, `${id}.png`));
+          report.browserScreenshot = `.local/reports/${id}.png`;
+        }
+      } finally {
+        if (run) await cleanup(run);
+        else if (await readFile(join(location(id), "manifest.json"), "utf8").catch(() => null))
+          await cleanup(await load(id));
+        report.cleaned = true;
+      }
     } finally {
       await mkdir(reports, { recursive: true });
       await writeFile(join(reports, `${id}.json`), JSON.stringify(report, null, 2));

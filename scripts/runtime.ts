@@ -1,13 +1,28 @@
 import { execFile } from "node:child_process";
 import { rename } from "node:fs/promises";
 import { createServer } from "node:net";
-import { arch, cpus, platform, release, totalmem } from "node:os";
-import { resolve } from "node:path";
+import { arch, cpus, platform, release, tmpdir, totalmem } from "node:os";
+import { basename, dirname, resolve } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { promisify } from "node:util";
 
 export const execute = promisify(execFile);
 export const root = resolve(import.meta.dirname, "..");
+export function browserProfilePath(path: string) {
+  const profile = resolve(path);
+  const parent = dirname(profile);
+  const expected = resolve(tmpdir());
+  const sameParent =
+    process.platform === "win32"
+      ? parent.toLowerCase() === expected.toLowerCase()
+      : parent === expected;
+  if (
+    !sameParent ||
+    !/^playwright_chromiumdev_profile-[a-zA-Z0-9_-]{6,40}$/.test(basename(profile))
+  )
+    throw new Error("Unowned browser profile path");
+  return profile;
+}
 // Windows readers can briefly deny replacement; keep the previous manifest intact.
 export async function replaceManifest(pending: string, target: string) {
   for (let attempt = 0; ; attempt++) {
