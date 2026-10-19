@@ -1,6 +1,17 @@
 import assert from "node:assert/strict";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import test from "node:test";
-import { overlaps, until } from "../scripts/runtime.js";
+import { browserProfilePath, overlaps, until } from "../scripts/runtime.js";
+
+test("browser cleanup rejects profiles outside its exact temporary directory", () => {
+  const profile = join(tmpdir(), "playwright_chromiumdev_profile-Abc123");
+  assert.equal(browserProfilePath(profile), resolve(profile));
+  assert.throws(() =>
+    browserProfilePath(join(tmpdir(), "..", "playwright_chromiumdev_profile-Abc123")),
+  );
+  assert.throws(() => browserProfilePath(join(tmpdir(), "user-chrome-profile")));
+});
 
 test("subnet allocation rejects nested and adjacent network conflicts", () => {
   assert.equal(overlaps("10.232.0.0/28", "10.0.0.0/8"), true);

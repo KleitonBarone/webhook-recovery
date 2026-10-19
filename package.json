@@ -12,6 +12,7 @@
     "sender": "tsx scripts/lab.ts sender",
     "dev": "tsx scripts/lab.ts dev",
     "dev:down": "tsx scripts/lab.ts dev-down",
+    "browser:install": "tsx scripts/browser.ts install",
     "env:check": "tsx scripts/lab.ts check",
     "env:status": "tsx scripts/lab.ts status",
     "db:up": "tsx scripts/lab.ts db-up",

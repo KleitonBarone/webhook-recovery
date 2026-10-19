@@ -12,6 +12,7 @@ This needs no WSL settings changes. Microsoft explains that
 
 ```powershell
 pnpm install --frozen-lockfile
+pnpm browser:install
 pnpm env:check
 pnpm check
 pnpm verify
@@ -28,6 +29,21 @@ Reports are in `.local/reports/<run-id>.json`. Keep at most five reports and 100
 of scratch output. Per-process logs are capped at 1 MiB; container logs rotate at
 10 MiB with two files. Reports retain bounded failure output. Selected engineering
 evidence is copied to documented deliverables before scratch report rotation.
+
+The browser install uses one project cache at
+`%LOCALAPPDATA%/webhook-recovery-browser-cache` on Windows or
+`~/.cache/webhook-recovery-browser-cache` on Linux. `PLAYWRIGHT_BROWSERS_PATH` can
+select a different explicit cache. Linux hosts may need
+`pnpm browser:install --with-deps`, which CI also uses. No second WSL Node install
+or signed-in user browser is used. Reuse this cache during development; remove it
+only when it was created for the task and is no longer needed.
+
+Verification includes one real Chromium recovery journey. It exhausts retries,
+inspects failure, repairs, replays with a reason, and checks immutable acceptance,
+retained history, one completion, viewer denial, and narrow navigation. The
+manifest records the browser root PID, exact command marker, and temporary profile.
+Normal closure and interrupted-run cleanup remove that owned profile. Failure
+screenshots exclude credential entry and stay beside the bounded JSON reports.
 
 For an interactive local developer environment:
 
@@ -89,8 +105,11 @@ task ends and remove a task-pulled image only when no retained service needs it.
 
 `pnpm verify:cleanup` performs the infrastructure lifecycle acceptance exercise:
 two successful runs, startup/test failures, a handled interruption, and failure
-while an experiment worker is paused before commit. It also kills a coordinator,
+while an experiment worker is paused before commit, and failure with Chromium open.
+It also kills a coordinator while its browser is registered,
 resets that disposable demo, and runs cleanup twice. It asserts the before/after
-Node/WSL process, container, volume, and network inventories match. Run it when
+Node/WSL/browser process, container, volume, and network inventories match. Run it when
 changing lifecycle behavior; normal CI runs isolated verification once. See the
 [finite scenario guide](scenarios.md) for the demo controls and reset boundary.
+`pnpm verify:cleanup --browser-only` focuses on browser success, failure, and abrupt
+coordinator recovery when the other infrastructure paths were already verified.
