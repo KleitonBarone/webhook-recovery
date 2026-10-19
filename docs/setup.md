@@ -57,3 +57,9 @@ The pinned PostgreSQL image and one pnpm dependency tree are reused during work.
 No custom image builds or builders are required. Temporary containers and volumes
 are removed after each verification. Record image/disk usage when the development
 task ends and remove a task-pulled image only when no retained service needs it.
+
+`pnpm verify:cleanup` performs the infrastructure lifecycle acceptance exercise:
+two successful runs, startup/test failures, a handled interruption, then an abrupt
+coordinator termination followed by cleanup twice. It asserts the before/after
+container, volume, and network inventories match. Run it when changing lifecycle
+behavior; normal CI runs the ordinary isolated verification once.

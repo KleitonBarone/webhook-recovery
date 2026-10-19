@@ -489,6 +489,12 @@ against merged `main`. Milestone 5 and the project are complete only then.
 Build this foundation in PR 1 and extend the same runner as capabilities arrive.
 Reliable testing and cleanup are acceptance criteria throughout development.
 
+During PR 1 verification, the machine's existing Docker networks exhausted its
+automatic address pools. The implementation therefore inspects existing subnets
+and WSL routes, allocates an unused /28 from 10.232.0.0/16, labels that project
+network, and verifies its removal. It preserves all pre-existing networks and
+does not change the daemon's address pools.
+
 ### One documented local setup
 
 Use the pinned Windows Node/pnpm installation for API, worker, sender, UI, and

@@ -23,6 +23,7 @@
     "build": "tsc -p tsconfig.build.json",
     "test:integration": "tsx scripts/lab.ts verify",
     "verify": "tsx scripts/lab.ts verify",
+    "verify:cleanup": "tsx scripts/check-cleanup.ts",
     "cleanup": "tsx scripts/lab.ts cleanup"
   },
   "dependencies": {

@@ -271,6 +271,9 @@ async function retainReports() {
   }
 }
 async function verify() {
+  const unfinished = (await readdir(runs).catch(() => [])).filter((id) => id !== "dev");
+  if (unfinished.length)
+    throw new Error(`Reconcile unfinished runs first with cleanup --run: ${unfinished.join(", ")}`);
   const id = randomBytes(8).toString("hex");
   let run: Manifest | undefined;
   const report: {
