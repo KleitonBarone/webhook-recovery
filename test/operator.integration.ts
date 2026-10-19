@@ -62,7 +62,7 @@ export async function verifyOperator(
   const headers = { cookie };
   assert.equal((await fetch(`${base}/api/events/${accepted.first.id}`, { headers })).status, 200);
   const info = await fetch(`${base}/api/session`, { headers });
-  assert.deepEqual(await info.json(), { sourceId: "demo", role: "viewer" });
+  assert.deepEqual(await info.json(), { sourceId: "demo", role: "viewer", demo: true });
   assert.equal((await fetch(`${base}/api/session`, { method: "DELETE", headers })).status, 403);
   assert.equal(
     (

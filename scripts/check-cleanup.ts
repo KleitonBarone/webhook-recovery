@@ -34,34 +34,32 @@ async function inventory() {
   return [...resources, processes];
 }
 const baseline = await inventory();
-for (const fault of ["", "", "startup", "test", "interrupt"]) {
+const failureReasons = {
+  startup: "Injected startup failure",
+  test: "Injected test failure",
+  interrupt: "Verification interrupted",
+  crash_barrier: "Injected crash-barrier failure",
+};
+for (const fault of ["", "", "startup", "test", "interrupt", "crash_barrier"] as const) {
   let result: { stdout: string; stderr: string };
+  let exitCode = 0;
   try {
     result = await execute(process.execPath, [...args, "verify"], {
       cwd: root,
       env: { ...process.env, LAB_FAIL_AT: fault },
       windowsHide: true,
     });
-    assert.equal(fault, "");
   } catch (error) {
     const failure = type({ code: "number", stdout: "string", stderr: "string" }).assert(error);
-    assert.notEqual(fault, "");
-    assert.equal(failure.code, 1);
+    exitCode = failure.code;
     result = failure;
   }
   const report = type({ cleaned: "boolean", "error?": "string" }).assert(
     JSON.parse(result.stdout.trim().split("\n").at(-1) ?? "{}"),
   );
   assert.equal(report.cleaned, true, result.stderr);
-  if (fault)
-    assert.equal(
-      report.error,
-      fault === "startup"
-        ? "Injected startup failure"
-        : fault === "test"
-          ? "Injected test failure"
-          : "Verification interrupted",
-    );
+  assert.equal(exitCode, fault ? 1 : 0, report.error ?? result.stderr);
+  if (fault) assert.equal(report.error, failureReasons[fault]);
   else assert.equal(report.error, undefined);
   assert.deepEqual(await inventory(), baseline);
   console.log(`Verified cleanup: ${fault || "success"}`);
@@ -102,6 +100,10 @@ try {
   child.kill("SIGKILL");
   await exited;
   if (id) {
+    await execute(process.execPath, [...args, "demo-reset", "--run", id], {
+      cwd: root,
+      windowsHide: true,
+    });
     await execute(process.execPath, [...args, "cleanup", "--run", id], {
       cwd: root,
       windowsHide: true,

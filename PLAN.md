@@ -149,11 +149,11 @@ completion effect, and an older snapshot cannot roll back a newer projection.
 
 ### 3. Failure and recovery
 
-- [ ] Classify transient and terminal handler failures and bound retries.
-- [ ] Persist retry timing with the failed attempt outcome using deterministic
+- [x] Classify transient and terminal handler failures and bound retries.
+- [x] Persist retry timing with the failed attempt outcome using deterministic
   clock/jitter controls in tests.
-- [ ] Reclaim expired work safely and fence stale-worker completions.
-- [ ] Add authenticated, audited, idempotent manual replay.
+- [x] Reclaim expired work safely and fence stale-worker completions.
+- [x] Add authenticated, audited, idempotent manual replay.
 - [ ] Demonstrate recovery across actual worker termination on a fresh local stack.
 
 Done when crashes before and after commit preserve correct local effects, retries

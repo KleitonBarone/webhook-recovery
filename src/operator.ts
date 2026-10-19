@@ -82,7 +82,7 @@ export async function eventForOperator(connection: Database, sourceId: string, i
   return event;
 }
 
-export function operatorRoutes(app: FastifyInstance, connection: Database) {
+export function operatorRoutes(app: FastifyInstance, connection: Database, demo = false) {
   app.register(cookie);
   app.post("/api/session", { bodyLimit: 512 }, async (request, reply) => {
     requireOrigin(request);
@@ -96,11 +96,11 @@ export function operatorRoutes(app: FastifyInstance, connection: Database) {
       path: "/api",
       maxAge: 86400,
     });
-    return { role: session.role, sourceId: session.sourceId };
+    return { role: session.role, sourceId: session.sourceId, demo };
   });
   app.get("/api/session", async (request) => {
     const session = await authenticate(connection, request);
-    return { role: session.role, sourceId: session.sourceId };
+    return { role: session.role, sourceId: session.sourceId, demo };
   });
   app.delete("/api/session", async (request, reply) => {
     requireOrigin(request);

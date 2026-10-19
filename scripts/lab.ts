@@ -12,6 +12,8 @@ import { database, migrateDatabase, seedDatabase } from "../src/database.js";
 import { sources } from "../src/schema.js";
 import { runSender } from "../src/sender.js";
 import { verifyClaims } from "../test/claims.integration.js";
+import { verifyCrashes } from "../test/crash.integration.js";
+import { verifyDemo } from "../test/demo.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
 import { verifyOperator } from "../test/operator.integration.js";
 import { verifyProcessing, verifyWorkerProcess } from "../test/processing.integration.js";
@@ -25,6 +27,7 @@ import {
   execute,
   readyHttp,
   root,
+  runtimeInfo,
   until,
 } from "./runtime.js";
 
@@ -231,7 +234,9 @@ async function startProcess(
   run: Manifest,
   name: string,
   script: string,
-  overrides: Partial<Record<"RETRY_BASE_MS", string>> = {},
+  overrides: Partial<
+    Record<"RETRY_BASE_MS" | "WORKER_LEASE_MS" | "LAB_PAUSE_AT" | "LAB_PAUSE_INBOX", string>
+  > = {},
 ) {
   const marker = `webhook-recovery-${run.id}-${name}`;
   const log = createWriteStream(join(location(run.id), `${name}.log`), { flags: "w" });
@@ -239,7 +244,7 @@ async function startProcess(
     cwd: root,
     env: { ...process.env, ...(await environment(run)), ...overrides },
     windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe"],
+    stdio: ["ignore", "pipe", "pipe", "ipc"],
   });
   let written = 0;
   const record = (chunk: Buffer) => {
@@ -247,6 +252,7 @@ async function startProcess(
     if (bounded.length) log.write(bounded);
     written += bounded.length;
   };
+  if (!child.stdout || !child.stderr) throw new Error("Missing child output pipes");
   child.stdout.on("data", record);
   child.stderr.on("data", record);
   child.once("close", () => log.end());
@@ -258,7 +264,7 @@ async function startProcess(
   children.set(child.pid, child);
   run.processes.push({ pid: child.pid, marker });
   await save(run);
-  if (name === "worker") {
+  if (script === "src/worker.ts") {
     const ready = `"pid":${child.pid}`;
     await until(async () =>
       (
@@ -406,6 +412,9 @@ async function verify() {
     cleaned: boolean;
     logs?: string;
     workerLogs?: string;
+    crashes?: Awaited<ReturnType<typeof verifyCrashes>>;
+    demos?: Awaited<ReturnType<typeof verifyDemo>>;
+    environment?: Awaited<ReturnType<typeof runtimeInfo>>;
     databaseLogs?: string;
   } = {
     run: id,
@@ -426,6 +435,16 @@ async function verify() {
   try {
     run = await startDatabase(id);
     await prepare(run);
+    const inspectedDatabase = database(configuration(await environment(run)));
+    try {
+      const [version] = type({ version: "string" })
+        .array()
+        .assert(await inspectedDatabase.client`select version() as version`);
+      if (!version) throw new Error("PostgreSQL version unavailable");
+      report.environment = await runtimeInfo(version.version);
+    } finally {
+      await inspectedDatabase.client.end();
+    }
     report.checks.push("migrate-upgrade-with-seeded-data-and-idempotent-seed");
     if (process.env.LAB_FAIL_AT === "startup") throw new Error("Injected startup failure");
     await startProcess(run, "api", "src/api.ts");
@@ -473,9 +492,41 @@ async function verify() {
       await until(() => readyHttp(`${base}/health`));
     });
     report.checks.push("replay-races-rollback-permissions-cycle-budgets-and-real-worker-restart");
+    report.crashes = await verifyCrashes(base, config, {
+      start: (name, pause) =>
+        startProcess(currentRun, `worker-${name}`, "src/worker.ts", {
+          WORKER_LEASE_MS: "2000",
+          LAB_PAUSE_AT: pause?.boundary ?? "",
+          LAB_PAUSE_INBOX: pause?.inboxId ?? "",
+        }),
+      stop: async (worker, force = false) => {
+        const registered = currentRun.processes.find((entry) => entry.pid === worker.pid);
+        if (!registered?.marker.startsWith(`webhook-recovery-${currentRun.id}-worker-`))
+          throw new Error("Unowned crash worker");
+        const alive = await ownedProcess(registered.pid, registered.marker);
+        if (force) assert.equal(alive, true, "Worker exited before planned termination");
+        if (alive) {
+          process.kill(registered.pid, force ? "SIGKILL" : "SIGTERM");
+          await until(async () => !(await ownedProcess(registered.pid, registered.marker)), 5000);
+        }
+        currentRun.processes = currentRun.processes.filter((entry) => entry.pid !== registered.pid);
+        children.delete(registered.pid);
+        await save(currentRun);
+      },
+      resume: async (worker, inboxId) => {
+        if (!worker.send || !worker.connected) throw new Error("Crash worker IPC disconnected");
+        await new Promise<void>((resolve, reject) =>
+          worker.send({ kind: "resume", inboxId }, (error) => (error ? reject(error) : resolve())),
+        );
+      },
+      log: (name) => readFile(join(location(currentRun.id), `worker-${name}.log`), "utf8"),
+    });
+    report.checks.push("actual-pre-post-commit-termination-and-resumed-owner-fencing");
     await startProcess(currentRun, "worker", "src/worker.ts");
     await verifyWorkerProcess(base, config);
     report.checks.push("real-worker-process-end-to-end");
+    report.demos = await verifyDemo(base, config);
+    report.checks.push("demo-gates-signed-http-delivery-redelivery-repair-and-replay");
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
     if (process.env.LAB_FAIL_AT === "interrupt") {
       controller.abort();
@@ -496,9 +547,19 @@ async function verify() {
     report.logs = (await readFile(join(location(id), "api.log"), "utf8").catch(() => "")).slice(
       -16384,
     );
+    const workerLogs = (await readdir(location(id)).catch(() => []))
+      .filter((name) => /^worker(?:-[a-z-]+)?\.log$/.test(name))
+      .sort();
     report.workerLogs = (
-      await readFile(join(location(id), "worker.log"), "utf8").catch(() => "")
-    ).slice(-16384);
+      await Promise.all(
+        workerLogs.map(
+          async (name) =>
+            `${name}\n${(await readFile(join(location(id), name), "utf8")).slice(-4096)}`,
+        ),
+      )
+    )
+      .join("\n")
+      .slice(-32768);
     if (run)
       report.databaseLogs = (
         await compose(run, ["logs", "--no-color", "--tail", "80", "postgres"]).catch(() => ({
@@ -550,12 +611,22 @@ else if (command === "check") {
   );
   console.log((await docker(["volume", "ls", "--filter", "label=recovery.run"])).stdout);
   console.log({ unfinished: await readdir(runs).catch(() => []) });
-} else if (command === "cleanup") {
-  const id = process.argv[process.argv.indexOf("--run") + 1];
+} else if (command === "cleanup" || command === "demo-reset") {
+  const optionIndex = process.argv.indexOf("--run");
+  const id = optionIndex < 0 ? undefined : process.argv[optionIndex + 1];
   if (!id || id === "dev") throw new Error("Provide --run <disposable-run-id>");
   const found = await readFile(join(location(id), "manifest.json"), "utf8").catch(() => null);
-  if (found) await cleanup(await load(id));
-  console.log(`Cleanup verified for ${id}`);
+  if (found) {
+    const run = await load(id);
+    if (command === "demo-reset" && (await environment(run)).DEMO_MODE !== "true")
+      throw new Error("Reset requires an explicitly disposable demo environment");
+    await cleanup(run);
+  }
+  console.log(
+    command === "demo-reset"
+      ? JSON.stringify({ reset: true, run: id, method: "disposable_environment_teardown" })
+      : `Cleanup verified for ${id}`,
+  );
 } else if (command === "db-up" || command === "dev") {
   const exists = await readFile(join(location("dev"), "manifest.json"), "utf8").catch(() => null);
   const run = exists ? await load("dev") : await startDatabase("dev");

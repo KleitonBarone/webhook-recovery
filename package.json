@@ -24,6 +24,8 @@
     "build": "tsc -p tsconfig.build.json",
     "test:integration": "tsx scripts/lab.ts verify",
     "verify": "tsx scripts/lab.ts verify",
+    "scenarios": "tsx scripts/lab.ts verify",
+    "demo:reset": "tsx scripts/lab.ts demo-reset",
     "verify:cleanup": "tsx scripts/check-cleanup.ts",
     "cleanup": "tsx scripts/lab.ts cleanup"
   },

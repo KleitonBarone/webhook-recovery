@@ -4,7 +4,7 @@ import { createServer } from "./server.js";
 
 const config = configuration();
 const connection = database(config);
-const app = createServer(connection);
+const app = createServer(connection, config);
 app.addHook("onClose", () => connection.client.end());
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => void app.close());

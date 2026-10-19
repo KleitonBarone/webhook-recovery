@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { createServer } from "node:net";
+import { arch, cpus, platform, release, totalmem } from "node:os";
 import { resolve } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import { promisify } from "node:util";
@@ -88,4 +89,24 @@ export async function until(check: () => Promise<boolean>, timeout = 30000) {
 export async function readyHttp(url: string) {
   const response = await fetch(url, { signal: AbortSignal.timeout(2000) }).catch(() => null);
   return response?.ok ?? false;
+}
+
+export async function runtimeInfo(postgresVersion: string) {
+  const [engine, compose] = await Promise.all([
+    docker(["version", "--format", "{{.Server.Version}}"]),
+    docker(["compose", "version", "--short"]),
+  ]);
+  return {
+    node: process.version,
+    pnpm: process.env.npm_config_user_agent?.split(" ")[0] ?? "unknown",
+    platform: platform(),
+    osRelease: release(),
+    arch: arch(),
+    logicalCpus: cpus().length,
+    cpuModel: cpus()[0]?.model ?? "unknown",
+    totalMemoryBytes: totalmem(),
+    docker: engine.stdout.trim(),
+    compose: compose.stdout.trim(),
+    postgres: postgresVersion,
+  };
 }
