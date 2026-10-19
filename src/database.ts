@@ -7,7 +7,12 @@ import type { Configuration } from "./config.js";
 import * as schema from "./schema.js";
 
 export function database(config: Pick<Configuration, "databaseUrl">) {
-  const client = postgres(config.databaseUrl, { max: 8, connect_timeout: 5, onnotice: () => {} });
+  const client = postgres(config.databaseUrl, {
+    max: 8,
+    connect_timeout: 5,
+    connection: { statement_timeout: 10000, idle_in_transaction_session_timeout: 10000 },
+    onnotice: () => {},
+  });
   return { client, db: drizzle(client, { schema }) };
 }
 export type Database = ReturnType<typeof database>;

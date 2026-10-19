@@ -35,6 +35,12 @@ Generated source/operator credentials are in `.local/runs/dev/app.env`, restrict
 to the current Windows user or mode 0600 on Linux. Never commit or copy them into
 the browser bundle. The console will join this command when implemented.
 
+In a second shell, `pnpm sender -- success` sends one local signed event and
+`pnpm sender -- duplicate` concurrently sends the same bytes five times. Both
+print acceptance receipts. The initial worker is idle until business processing
+is implemented. See [the contract](contract.md) for signatures and authenticated
+inspection. Keep generated credentials out of URLs and shared output.
+
 Ctrl+C stops development services and preserves the database. From another shell,
 `pnpm dev:down` performs the same shutdown. `pnpm db:up`, `pnpm db:down`,
 `pnpm db:migrate`, and `pnpm db:seed` manage the retained development environment.

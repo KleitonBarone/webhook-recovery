@@ -2,13 +2,17 @@ import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { parseEnv } from "node:util";
 import { type } from "arktype";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { configuration } from "../src/config.js";
 import { database, migrateDatabase, seedDatabase } from "../src/database.js";
 import { sources } from "../src/schema.js";
+import { runSender } from "../src/sender.js";
+import { verifyIntake } from "../test/intake.integration.js";
+import { verifyOperator } from "../test/operator.integration.js";
 import { availablePort, availableSubnet, docker, execute, root, until } from "./runtime.js";
 
 const runs = join(root, ".local", "runs");
@@ -245,6 +249,33 @@ async function prepare(run: Manifest) {
   const connection = database(config);
   try {
     await connection.client`select 1`;
+    const journal = type({
+      version: "string",
+      dialect: "string",
+      entries: type({
+        idx: "number",
+        version: "string",
+        when: "number",
+        tag: /^[a-z0-9_]+$/,
+        breakpoints: "boolean",
+      }).array(),
+    }).assert(JSON.parse(await readFile(join(root, "drizzle", "meta", "_journal.json"), "utf8")));
+    if (run.disposable && journal.entries.length > 1) {
+      const previous = join(location(run.id), "previous-migrations");
+      const entries = journal.entries.slice(0, -1);
+      await mkdir(join(previous, "meta"), { recursive: true });
+      await writeFile(
+        join(previous, "meta", "_journal.json"),
+        JSON.stringify({ ...journal, entries }),
+      );
+      for (const entry of entries)
+        await copyFile(
+          join(root, "drizzle", `${entry.tag}.sql`),
+          join(previous, `${entry.tag}.sql`),
+        );
+      await migrate(connection.db, { migrationsFolder: previous });
+      await seedDatabase(connection, config);
+    }
     await migrateDatabase(connection);
     await seedDatabase(connection, config);
     await seedDatabase(connection, config);
@@ -279,6 +310,7 @@ async function verify() {
   const report: {
     run: string;
     revision: string;
+    dirty: boolean;
     node: string;
     checks: string[];
     error?: string;
@@ -287,6 +319,7 @@ async function verify() {
   } = {
     run: id,
     revision: (await execute("git", ["rev-parse", "HEAD"], { cwd: root })).stdout.trim(),
+    dirty: !!(await execute("git", ["status", "--porcelain"], { cwd: root })).stdout.trim(),
     node: process.version,
     checks: [],
     cleaned: false,
@@ -302,7 +335,7 @@ async function verify() {
   try {
     run = await startDatabase(id);
     await prepare(run);
-    report.checks.push("migrate-and-idempotent-seed");
+    report.checks.push("migrate-upgrade-with-seeded-data-and-idempotent-seed");
     if (process.env.LAB_FAIL_AT === "startup") throw new Error("Injected startup failure");
     await startProcess(run, "api", "src/api.ts");
     await startProcess(run, "worker", "src/worker.ts");
@@ -312,6 +345,18 @@ async function verify() {
       return (await fetch(`http://127.0.0.1:${apiPort}/health`)).ok;
     });
     report.checks.push("real-http-database-readiness");
+    const base = `http://127.0.0.1:${apiPort}`;
+    const currentRun = run;
+    const config = configuration(await environment(run));
+    const accepted = await verifyIntake(base, config, async () => {
+      await stopProcesses(currentRun);
+      await startProcess(currentRun, "api", "src/api.ts");
+      await startProcess(currentRun, "worker", "src/worker.ts");
+      await until(async () => (await fetch(`${base}/health`)).ok);
+    });
+    report.checks.push("signed-intake-concurrency-conflicts-restart-database-failure");
+    await verifyOperator(base, config, accepted);
+    report.checks.push("operator-cookie-origin-expiry-source-permissions-bounded-inspection");
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
     if (process.env.LAB_FAIL_AT === "interrupt") {
       controller.abort();
@@ -334,6 +379,8 @@ async function verify() {
     );
     try {
       if (run) await cleanup(run);
+      else if (await readFile(join(location(id), "manifest.json"), "utf8").catch(() => null))
+        await cleanup(await load(id));
       report.cleaned = true;
     } finally {
       await mkdir(reports, { recursive: true });
@@ -400,4 +447,11 @@ else if (command === "migrate" || command === "seed") {
   } finally {
     await connection.client.end();
   }
+} else if (command === "sender") {
+  const run = await load(process.env.LAB_RUN ?? "dev");
+  await runSender(
+    `http://127.0.0.1:${run.apiPort}`,
+    configuration(await environment(run)),
+    (process.argv[3] === "--" ? process.argv[4] : process.argv[3]) ?? "success",
+  );
 } else throw new Error("Unknown lab command");
