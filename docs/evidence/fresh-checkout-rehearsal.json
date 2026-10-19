@@ -1,0 +1,74 @@
+{
+  "revision": "bebc97eed1730ef01320058b8c38614b6186e691",
+  "rehearsal": {
+    "checkout": "C:\\Users\\admin\\AppData\\Local\\Temp\\webhook-recovery-rehearsal-bebc97e",
+    "revision": "bebc97eed1730ef01320058b8c38614b6186e691",
+    "dirty": false,
+    "finishedAt": "2026-10-19T19:42:29.2820173Z",
+    "steps": [
+      {
+        "exitCode": 0,
+        "command": "pnpm install --frozen-lockfile",
+        "elapsedMs": 627.7662,
+        "log": "install.log"
+      },
+      {
+        "exitCode": 0,
+        "command": "pnpm browser:install",
+        "elapsedMs": 1372.4757,
+        "log": "browser-install.log"
+      },
+      {
+        "exitCode": 0,
+        "command": "pnpm env:check",
+        "elapsedMs": 2301.2893,
+        "log": "environment.log"
+      },
+      {
+        "exitCode": 0,
+        "command": "pnpm check",
+        "elapsedMs": 12097.924,
+        "log": "checks.log"
+      },
+      {
+        "exitCode": 0,
+        "command": "pnpm verify",
+        "elapsedMs": 68368.6762,
+        "log": "verification.log"
+      },
+      {
+        "exitCode": 0,
+        "command": "pnpm verify:cleanup --browser-only",
+        "elapsedMs": 195865.4646,
+        "log": "interrupted-cleanup.log"
+      },
+      {
+        "exitCode": 0,
+        "command": "pnpm env:status",
+        "elapsedMs": 2216.5039,
+        "log": "final-status.log"
+      }
+    ]
+  },
+  "before": {
+    "time": "2026-10-19T19:37:28.920Z",
+    "ownedContainers": [],
+    "ownedVolumes": [],
+    "ownedProcesses": [],
+    "networkCount": 41,
+    "networkIdsSha256": "cd6d7af31769cb536c8da0dcc20a1b0e5f4c6dcadf764d9e49b886f9b057e752",
+    "images": ["77f585114c32 postgres:18.6-alpine"]
+  },
+  "after": {
+    "time": "2026-10-19T19:42:36.510Z",
+    "ownedContainers": [],
+    "ownedVolumes": [],
+    "ownedProcesses": [],
+    "networkCount": 41,
+    "networkIdsSha256": "cd6d7af31769cb536c8da0dcc20a1b0e5f4c6dcadf764d9e49b886f9b057e752",
+    "images": ["77f585114c32 postgres:18.6-alpine"]
+  },
+  "inventoryMatches": true,
+  "artifactDirectory": "C:\\Users\\admin\\Videos\\webhook-recovery\\2026-10-19-bebc97e",
+  "rawLogs": "Preserved beside videos. Windows PowerShell renders normal pnpm stderr as NativeCommandError records; native exit codes above are authoritative."
+}

@@ -1,0 +1,39 @@
+{
+  "revision": "bebc97eed1730ef01320058b8c38614b6186e691",
+  "time": "2026-10-19T19:53:58.4337381Z",
+  "afterRecording": {
+    "time": "2026-10-19T19:51:34.091Z",
+    "ownedContainers": [],
+    "ownedVolumes": [],
+    "ownedProcesses": [],
+    "networkCount": 41,
+    "networkIdsSha256": "cd6d7af31769cb536c8da0dcc20a1b0e5f4c6dcadf764d9e49b886f9b057e752",
+    "images": ["77f585114c32 postgres:18.6-alpine"]
+  },
+  "finalInventory": {
+    "time": "2026-10-19T19:52:37.654Z",
+    "ownedContainers": [],
+    "ownedVolumes": [],
+    "ownedProcesses": [],
+    "networkCount": 41,
+    "networkIdsSha256": "cd6d7af31769cb536c8da0dcc20a1b0e5f4c6dcadf764d9e49b886f9b057e752",
+    "images": []
+  },
+  "cleanupRun": "9edceaa73013d160",
+  "explicitCleanupCalls": 2,
+  "taskPostgresImageRemoved": true,
+  "taskBrowserCacheRemoved": true,
+  "removedBrowserCacheBytes": 752827626,
+  "retainedDevDatabaseCreated": false,
+  "rehearsalContentsRemoved": true,
+  "emptyRehearsalDirectory": "C:\\Users\\admin\\AppData\\Local\\Temp\\webhook-recovery-rehearsal-bebc97e",
+  "emptyDirectoryLimitation": "Windows reports the empty directory is in use. Zero files remain. No unrelated process was stopped to release it.",
+  "intentionalRetentionApparentBytes": {
+    "C:\\Users\\admin\\repos\\webhook-recovery\\node_modules": 261064570,
+    "C:\\Users\\admin\\repos\\webhook-recovery\\.local": 1445763,
+    "C:\\Users\\admin\\repos\\webhook-recovery\\dist": 55208,
+    "C:\\Users\\admin\\repos\\webhook-recovery\\web\\dist": 537743,
+    "C:\\Users\\admin\\Videos\\webhook-recovery\\2026-10-19-bebc97e": 39838640
+  },
+  "diskDefinition": "Sum of file lengths; hard links/shared cache allocation are not deduplicated. Shared pnpm store, existing networks and user tools preserved."
+}

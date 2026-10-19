@@ -1,0 +1,52 @@
+{
+  "revision": "bebc97eed1730ef01320058b8c38614b6186e691",
+  "artifactDirectory": "C:\\Users\\admin\\Videos\\webhook-recovery\\2026-10-19-bebc97e",
+  "format": "H.264 MP4 with burned-in English captions; silent, sidecar SRT and transcripts",
+  "videos": [
+    {
+      "name": "overview",
+      "filename": "overview.mp4",
+      "bytes": 1466101,
+      "sha256": "b908936fb82940a1d8540f4ffa34b868cf78c789dd8c7fe7c066ad53dcb7acce",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900
+          }
+        ],
+        "format": {
+          "duration": "81.640000",
+          "size": "1466101"
+        }
+      }
+    },
+    {
+      "name": "engineering",
+      "filename": "engineering.mp4",
+      "bytes": 2947799,
+      "sha256": "867c3ab12b40b09dcc2c812ec2cb36a326f25e8d11743559fb4e7b6313287f05",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "width": 1280,
+            "height": 900
+          }
+        ],
+        "format": {
+          "duration": "172.080000",
+          "size": "2947799"
+        }
+      }
+    }
+  ],
+  "scriptSha256": "f4a180e336c3cc1e39155a800c5c41285b1106a8cd32a5b635640c41c9579d24",
+  "sourceScript": "record-walkthroughs.ts in the external artifact directory",
+  "hosting": "Local artifacts are intentionally outside Git; screenshots, captions, transcript, proof and checksums are committed."
+}
