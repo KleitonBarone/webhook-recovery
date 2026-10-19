@@ -75,6 +75,28 @@ export const attemptOutcome = pgEnum("attempt_outcome", [
   "dead_lettered",
   "retry_scheduled",
 ]);
+export const replayRequests = pgTable(
+  "replay_requests",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id),
+    inboxId: uuid("inbox_id")
+      .notNull()
+      .references(() => inbox.id),
+    operatorId: text("operator_id").notNull(),
+    idempotencyKey: uuid("idempotency_key").notNull(),
+    reason: text().notNull(),
+    cycleNumber: integer("cycle_number").notNull(),
+    requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("replay_operator_key").on(table.sourceId, table.operatorId, table.idempotencyKey),
+    uniqueIndex("replay_event_cycle").on(table.inboxId, table.cycleNumber),
+    check("replay_reason_length", sql`length(${table.reason}) between 1 and 500`),
+  ],
+);
 export const attempts = pgTable(
   "processing_attempts",
   {
@@ -90,7 +112,7 @@ export const attempts = pgTable(
     reason: text(),
     cycleNumber: integer("cycle_number").notNull().default(1),
     cycleAttempt: integer("cycle_attempt").notNull().default(1),
-    replayId: uuid("replay_id"),
+    replayId: uuid("replay_id").references(() => replayRequests.id),
     retryAt: timestamp("retry_at", { withTimezone: true }),
     failureCode: text("failure_code"),
   },

@@ -5,12 +5,14 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { State } from "./contract.js";
 import { type Database, hash } from "./database.js";
 import { RequestError } from "./errors.js";
+import { ReplayInput, replayEvent } from "./replay.js";
 import {
   attempts,
   completions,
   inbox,
   processingReceipts,
   refunds,
+  replayRequests,
   sessions,
   sources,
 } from "./schema.js";
@@ -167,6 +169,12 @@ export function operatorRoutes(app: FastifyInstance, connection: Database) {
         ),
       )
       .limit(1);
+    const replays = await connection.db
+      .select()
+      .from(replayRequests)
+      .where(eq(replayRequests.inboxId, event.id))
+      .orderBy(desc(replayRequests.cycleNumber))
+      .limit(51);
     return {
       event,
       attempts: history.slice(0, 50).reverse(),
@@ -174,6 +182,45 @@ export function operatorRoutes(app: FastifyInstance, connection: Database) {
       receipt: receipt ?? null,
       projection: projection ?? null,
       completions: ledger,
+      replays: replays.slice(0, 50).reverse(),
+      replaysNextOffset: replays.length > 50 ? 50 : null,
+    };
+  });
+  app.post<{ Params: { id: string } }>(
+    "/api/events/:id/replay",
+    { bodyLimit: 4096 },
+    async (request, reply) => {
+      requireOrigin(request);
+      const session = await requireOperator(connection, request);
+      const input = ReplayInput(request.body);
+      if (input instanceof type.errors) throw new RequestError(400, "Invalid replay request");
+      const replay = await replayEvent(
+        connection,
+        { sourceId: session.sourceId, operatorId: hash(session.tokenHash) },
+        request.params.id,
+        input,
+      );
+      reply.code(202);
+      return { replay };
+    },
+  );
+  app.get<{ Params: { id: string } }>("/api/events/:id/replays", async (request) => {
+    const session = await authenticate(connection, request);
+    const event = await eventForOperator(connection, session.sourceId, request.params.id);
+    const query = ListQuery.omit("state")(request.query);
+    if (query instanceof type.errors) throw new RequestError(400, "Invalid replay pagination");
+    const limit = Number(query.limit ?? 50);
+    const offset = Number(query.offset ?? 0);
+    const items = await connection.db
+      .select()
+      .from(replayRequests)
+      .where(eq(replayRequests.inboxId, event.id))
+      .orderBy(desc(replayRequests.cycleNumber))
+      .limit(limit)
+      .offset(offset);
+    return {
+      items,
+      nextOffset: items.length === limit && offset + limit <= 10000 ? offset + limit : null,
     };
   });
   app.get<{ Params: { id: string } }>("/api/events/:id/attempts", async (request) => {

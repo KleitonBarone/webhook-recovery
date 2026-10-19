@@ -15,6 +15,7 @@ import { verifyClaims } from "../test/claims.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
 import { verifyOperator } from "../test/operator.integration.js";
 import { verifyProcessing, verifyWorkerProcess } from "../test/processing.integration.js";
+import { verifyReplay } from "../test/replay.integration.js";
 import { verifyRetries } from "../test/retries.integration.js";
 import {
   availablePort,
@@ -444,6 +445,8 @@ async function verify() {
     report.checks.push("atomic-effects-receipts-ordering-business-deduplication");
     await verifyRetries(base, config);
     report.checks.push("durable-retry-schedules-classification-and-cycle-budgets");
+    await verifyReplay(base, config);
+    report.checks.push("audited-idempotent-replay-preserves-acceptance-and-failure-history");
     await startProcess(currentRun, "worker", "src/worker.ts");
     await verifyWorkerProcess(base, config);
     report.checks.push("real-worker-process-end-to-end");

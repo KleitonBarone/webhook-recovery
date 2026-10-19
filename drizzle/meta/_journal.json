@@ -36,6 +36,13 @@
       "when": 1792420823491,
       "tag": "0004_brave_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792421041325,
+      "tag": "0005_bouncy_the_fury",
+      "breakpoints": true
     }
   ]
 }
