@@ -4,11 +4,12 @@ import type { FastifyInstance } from "fastify";
 import { Receipt } from "./contract.js";
 import type { Database } from "./database.js";
 import { RequestError } from "./errors.js";
+import { DemoScenario } from "./messages.js";
 import { eventForOperator, requireOperator, requireOrigin } from "./operator.js";
 import { sources, syntheticFaults } from "./schema.js";
 import { fixture, send } from "./sender.js";
 
-const FixtureInput = type({ scenario: "'success' | 'transient' | 'permanent'", "+": "reject" });
+const FixtureInput = type({ scenario: DemoScenario, "+": "reject" });
 const Empty = type({ "+": "reject" });
 
 // These routes are registered only in explicit local demo mode.
@@ -33,9 +34,12 @@ export function demoRoutes(app: FastifyInstance, connection: Database) {
     if (input instanceof type.errors) throw new RequestError(400, "Invalid demo scenario");
     const payload = fixture();
     if (input.scenario !== "success")
-      await connection.db
-        .insert(syntheticFaults)
-        .values({ sourceId: session.sourceId, refundId: payload.refundId, kind: input.scenario });
+      await connection.db.insert(syntheticFaults).values({
+        sourceId: session.sourceId,
+        refundId: payload.refundId,
+        kind: input.scenario === "exhausted" ? "transient" : input.scenario,
+        failForAttempts: input.scenario === "exhausted" ? 100 : 1,
+      });
     const receipt = await deliver(session.sourceId, JSON.stringify(payload));
     reply.code(202);
     return { receipt };

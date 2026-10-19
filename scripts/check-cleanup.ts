@@ -77,6 +77,8 @@ const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()
 let id: string | undefined;
 try {
   await until(async () => {
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error("Verification coordinator exited before full-stack readiness");
     const found = (await readdir(runRoot)).find((candidate) => !before.includes(candidate));
     if (!found) return false;
     id = found;
@@ -90,12 +92,15 @@ try {
     const manifest = type({
       processes: type({ marker: "string" }).array(),
       apiPort: "number",
+      "uiPort?": "number",
     }).assert(JSON.parse(text));
     return (
-      manifest.processes.filter((child) => !child.marker.endsWith("-wsl")).length === 2 &&
-      (await readyHttp(`http://127.0.0.1:${manifest.apiPort}/health`))
+      manifest.processes.filter((child) => !child.marker.endsWith("-wsl")).length === 3 &&
+      manifest.uiPort !== undefined &&
+      (await readyHttp(`http://127.0.0.1:${manifest.apiPort}/health`)) &&
+      (await readyHttp(`http://127.0.0.1:${manifest.uiPort}`))
     );
-  });
+  }, 180000);
 } finally {
   child.kill("SIGKILL");
   await exited;

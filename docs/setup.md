@@ -17,9 +17,9 @@ pnpm check
 pnpm verify
 ```
 
-`verify` allocates its own loopback database/API ports, a small nonoverlapping
+`verify` allocates its own loopback database/API/console ports, a small nonoverlapping
 Docker subnet, and a unique Compose project. It migrates an empty database, seeds
-twice, starts the real API/worker, checks readiness, and exercises implemented
+twice, starts the real API/worker and Vite console, checks readiness, and exercises implemented
 integration scenarios. Its `finally` path removes owned processes, containers,
 networks, disposable volumes, and private credential files. It exits nonzero if
 verification or cleanup fails. CI uses the same commands and Compose definition.
@@ -36,10 +36,17 @@ pnpm dev
 ```
 
 This creates the retained `webhook-recovery` Compose project and
-`webhook_recovery_dev` database. The API uses 4331 and PostgreSQL uses 55433.
+`webhook_recovery_dev` database. Open the console at http://127.0.0.1:4330.
+The API uses 4331 and PostgreSQL uses 55433.
 Generated source/operator credentials are in `.local/runs/dev/app.env`, restricted
 to the current Windows user or mode 0600 on Linux. Never commit or copy them into
-the browser bundle. The console will join this command when implemented.
+the browser bundle. Sign in with `OPERATOR_TOKEN` or `VIEWER_TOKEN`. The console
+uses an HttpOnly session cookie and keeps no credential in browser storage.
+Operators can send successful, temporary-failure, permanent-failure, or exhausted-retry
+samples from the inbox. Select a failed event, repair its demo cause, enter a replay
+reason, and request replay. The detail view preserves earlier attempts and shows
+the completion count. Redelivering the original returns its original acceptance
+receipt. Viewer sessions can inspect events but cannot invoke these controls.
 
 In a second shell, `pnpm sender -- success` sends one local signed event and
 `pnpm sender -- duplicate` concurrently sends the same bytes five times. Both
@@ -72,6 +79,8 @@ labels and process command markers, tears down only that disposable run, and can
 be repeated. It refuses the retained `dev` environment. Never use global Docker
 pruning or WSL shutdown to recover a test run. Pre-existing networks are preserved,
 even if their address pools prevent automatic subnet allocation.
+`env:status` also reports registered process ownership, API/console ports, and
+scratch bytes so leftover runs are visible before another verification starts.
 
 The pinned PostgreSQL image and one pnpm dependency tree are reused during work.
 No custom image builds or builders are required. Temporary containers and volumes

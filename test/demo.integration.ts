@@ -42,7 +42,7 @@ export async function verifyDemo(base: string, config: Configuration) {
     await until(async () => (await detail(id)).event.state === state);
     return detail(id);
   }
-  async function sample(scenario: "success" | "transient" | "permanent") {
+  async function sample(scenario: "success" | "transient" | "permanent" | "exhausted") {
     const response = await post("/api/demo/fixtures", { scenario });
     assert.equal(response.status, 202);
     const value = type({ receipt: Receipt }).assert(await response.json());
@@ -97,6 +97,13 @@ export async function verifyDemo(base: string, config: Configuration) {
       retried.attempts.map((attempt) => attempt.outcome),
       ["retry_scheduled", "processed"],
     );
+    const exhausted = await sample("exhausted");
+    const exhaustedDetail = await finished(exhausted.id, "dead_lettered");
+    assert.deepEqual(
+      exhaustedDetail.attempts.map((attempt) => attempt.outcome),
+      ["retry_scheduled", "retry_scheduled", "dead_lettered"],
+    );
+    assert.equal(exhaustedDetail.completions.length, 0);
     const permanent = await sample("permanent");
     const failed = await finished(permanent.id, "dead_lettered");
     assert.equal(failed.completions.length, 0);
@@ -160,6 +167,12 @@ export async function verifyDemo(base: string, config: Configuration) {
         outcomes: recovered.attempts.map((attempt) => attempt.outcome),
         completions: recovered.completions.length,
         replays: recovered.replays.length,
+      },
+      {
+        scenario: "demo_exhausted_retries",
+        receipt: exhausted,
+        outcomes: exhaustedDetail.attempts.map((attempt) => attempt.outcome),
+        completions: exhaustedDetail.completions.length,
       },
     ];
   } finally {

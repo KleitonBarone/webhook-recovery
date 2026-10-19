@@ -1,27 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { type } from "arktype";
 import { RequestError } from "./errors.js";
+import { Event } from "./messages.js";
 
-export const Event = type({
-  schemaVersion: "1",
-  type: "'refund.status_changed'",
-  eventId: "string.uuid",
-  refundId: /^[a-zA-Z0-9_-]{1,64}$/,
-  version: "number.integer >= 1 & number <= 2147483647",
-  status: "'pending' | 'completed' | 'failed'",
-  "+": "reject",
-});
-export type Event = typeof Event.infer;
-export const Receipt = type({ id: "string.uuid", eventId: "string.uuid", acceptedAt: "string" });
-export const states = [
-  "received",
-  "processing",
-  "retry_scheduled",
-  "processed",
-  "ignored_stale",
-  "dead_lettered",
-] as const;
-export const State = type.enumerated(...states);
+export { Event, Receipt, State, states } from "./messages.js";
+
 export const signatureToleranceSeconds = 300;
 
 // Sign the original bytes. JSON normalization changes event identity and the signature.

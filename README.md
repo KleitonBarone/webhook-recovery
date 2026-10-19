@@ -12,8 +12,9 @@ and its effect on a synthetic refund projection.
 API/worker entry points, signed durable intake, authenticated inspection, migrations,
 versioned refund processing, bounded retries, audited replay, and verification/cleanup
 runner are available, including [actual worker crash scenarios](docs/scenarios.md).
-See the [recovery runbook](docs/recovery.md). The console follows in the
-[implementation plan](PLAN.md).
+The React console provides authenticated inspection, sample controls, and audited replay through
+`pnpm dev`. See [local setup](docs/setup.md), the [recovery runbook](docs/recovery.md),
+and the remaining [implementation plan](PLAN.md).
 
 Use Node 24.20.0, pnpm 11.23.0, and Docker/Compose in WSL Ubuntu on Windows:
 

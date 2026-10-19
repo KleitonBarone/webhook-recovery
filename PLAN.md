@@ -154,7 +154,7 @@ completion effect, and an older snapshot cannot roll back a newer projection.
   clock/jitter controls in tests.
 - [x] Reclaim expired work safely and fence stale-worker completions.
 - [x] Add authenticated, audited, idempotent manual replay.
-- [ ] Demonstrate recovery across actual worker termination on a fresh local stack.
+- [x] Demonstrate recovery across actual worker termination on a fresh local stack.
 
 Done when crashes before and after commit preserve correct local effects, retries
 survive restart, and replay keeps earlier failure history intact. Do not claim
@@ -176,7 +176,7 @@ showing failure investigation and recovery; avoid exhaustive UI snapshots.
 
 ### 5. Reproducible engineering evidence
 
-- [ ] Add a finite scenario runner with machine-readable correctness results.
+- [x] Add a finite scenario runner with machine-readable correctness results.
 - [ ] Rehearse a clean checkout and document all working local commands.
 - [ ] Prove repeated verification and cleanup leave no temporary services,
   databases, volumes, or accumulating scratch artifacts behind.

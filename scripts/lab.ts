@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { parseEnv } from "node:util";
 import { type } from "arktype";
@@ -12,6 +12,7 @@ import { database, migrateDatabase, seedDatabase } from "../src/database.js";
 import { sources } from "../src/schema.js";
 import { runSender } from "../src/sender.js";
 import { verifyClaims } from "../test/claims.integration.js";
+import { verifyConsole } from "../test/console.integration.js";
 import { verifyCrashes } from "../test/crash.integration.js";
 import { verifyDemo } from "../test/demo.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
@@ -26,6 +27,7 @@ import {
   docker,
   execute,
   readyHttp,
+  replaceManifest,
   root,
   runtimeInfo,
   until,
@@ -43,6 +45,7 @@ const Manifest = type({
   containers: "string[]",
   volumes: "string[]",
   apiPort: "number.integer",
+  "uiPort?": "number.integer",
 });
 type Manifest = typeof Manifest.infer;
 function location(id: string) {
@@ -54,7 +57,7 @@ function location(id: string) {
 async function save(run: Manifest) {
   const pending = join(location(run.id), `manifest.${process.pid}.new.json`);
   await writeFile(pending, JSON.stringify(run, null, 2));
-  await rename(pending, join(location(run.id), "manifest.json"));
+  await replaceManifest(pending, join(location(run.id), "manifest.json"));
 }
 async function load(id: string) {
   const run = Manifest.assert(
@@ -235,7 +238,10 @@ async function startProcess(
   name: string,
   script: string,
   overrides: Partial<
-    Record<"RETRY_BASE_MS" | "WORKER_LEASE_MS" | "LAB_PAUSE_AT" | "LAB_PAUSE_INBOX", string>
+    Record<
+      "RETRY_BASE_MS" | "WORKER_LEASE_MS" | "LAB_PAUSE_AT" | "LAB_PAUSE_INBOX" | "UI_PORT",
+      string
+    >
   > = {},
 ) {
   const marker = `webhook-recovery-${run.id}-${name}`;
@@ -264,20 +270,38 @@ async function startProcess(
   children.set(child.pid, child);
   run.processes.push({ pid: child.pid, marker });
   await save(run);
-  if (script === "src/worker.ts") {
+  const readyEvent =
+    script === "src/worker.ts"
+      ? "worker_ready"
+      : script === "src/api.ts"
+        ? "api_ready"
+        : script === "web/dev.ts"
+          ? "console_ready"
+          : undefined;
+  if (readyEvent) {
     const ready = `"pid":${child.pid}`;
-    await until(async () =>
-      (
+    await until(async () => {
+      if (child.exitCode !== null || child.signalCode !== null)
+        throw new Error(`Owned ${name} exited before readiness; inspect its bounded log`);
+      return (
         await readFile(join(location(run.id), `${name}.log`), "utf8").catch((error: unknown) => {
           if (error instanceof Error && "code" in error && error.code === "ENOENT") return "";
           throw error;
         })
       )
         .split("\n")
-        .some((line) => line.includes('"event":"worker_ready"') && line.includes(ready)),
-    );
+        .some((line) => line.includes(`"event":"${readyEvent}"`) && line.includes(ready));
+    });
   }
   return child;
+}
+async function startConsole(run: Manifest) {
+  run.uiPort ??= run.id === "dev" ? 4330 : await availablePort();
+  await save(run);
+  await startProcess(run, "console", "web/dev.ts", { UI_PORT: String(run.uiPort) });
+  const base = `http://127.0.0.1:${run.uiPort}`;
+  await until(() => readyHttp(base));
+  return base;
 }
 async function startDatabase(id: string) {
   await mkdir(location(id), { recursive: true });
@@ -389,6 +413,17 @@ async function retainReports() {
     size += file.info.size;
     if (index >= 5 || size > 100 * 1024 * 1024) await rm(file.path);
   }
+}
+async function diskBytes(path: string): Promise<number> {
+  const entries = await readdir(path, { withFileTypes: true }).catch(() => []);
+  const sizes = await Promise.all(
+    entries.map(async (entry) => {
+      const child = join(path, entry.name);
+      if (entry.isSymbolicLink()) return 0;
+      return entry.isDirectory() ? diskBytes(child) : (await stat(child)).size;
+    }),
+  );
+  return sizes.reduce((sum, size) => sum + size, 0);
 }
 async function verify() {
   const unfinished = (await readdir(runs).catch(() => [])).filter((id) => id !== "dev");
@@ -527,6 +562,11 @@ async function verify() {
     report.checks.push("real-worker-process-end-to-end");
     report.demos = await verifyDemo(base, config);
     report.checks.push("demo-gates-signed-http-delivery-redelivery-repair-and-replay");
+    const consoleBase = await startConsole(currentRun);
+    await verifyConsole(consoleBase, config, report.demos[0]?.receipt.id, location(currentRun.id));
+    report.checks.push("console-readiness-same-origin-session-proxy-and-private-file-denial");
+    if (process.env.LAB_FAIL_AT === "hold")
+      console.log(JSON.stringify({ event: "lab_ready", run: id, console: consoleBase }));
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
     if (process.env.LAB_FAIL_AT === "interrupt") {
       controller.abort();
@@ -610,7 +650,26 @@ else if (command === "check") {
     ).stdout,
   );
   console.log((await docker(["volume", "ls", "--filter", "label=recovery.run"])).stdout);
-  console.log({ unfinished: await readdir(runs).catch(() => []) });
+  const manifests = [];
+  for (const id of await readdir(runs).catch(() => [])) {
+    const run = await load(id);
+    const processes = await Promise.all(
+      run.processes.map(async (child) => ({
+        ...child,
+        alive: await ownedProcess(child.pid, child.marker),
+      })),
+    );
+    manifests.push({
+      id,
+      retained: !run.disposable,
+      apiPort: run.apiPort,
+      uiPort: run.uiPort,
+      processes,
+    });
+  }
+  console.log(
+    JSON.stringify({ runs: manifests, scratchBytes: await diskBytes(join(root, ".local")) }),
+  );
 } else if (command === "cleanup" || command === "demo-reset") {
   const optionIndex = process.argv.indexOf("--run");
   const id = optionIndex < 0 ? undefined : process.argv[optionIndex + 1];
@@ -645,7 +704,10 @@ else if (command === "check") {
     if (command === "dev") {
       await startProcess(run, "api", "src/api.ts");
       await startProcess(run, "worker", "src/worker.ts");
-      console.log(`API http://127.0.0.1:${run.apiPort}; credentials in .local/runs/dev/app.env`);
+      const consoleBase = await startConsole(run);
+      console.log(
+        `Console ${consoleBase}; API http://127.0.0.1:${run.apiPort}; credentials in .local/runs/dev/app.env`,
+      );
     }
     if (command === "dev" || process.platform === "win32") {
       if (command === "db-up")
