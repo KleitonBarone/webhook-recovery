@@ -5,7 +5,15 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import { State } from "./contract.js";
 import { type Database, hash } from "./database.js";
 import { RequestError } from "./errors.js";
-import { inbox, sessions, sources } from "./schema.js";
+import {
+  attempts,
+  completions,
+  inbox,
+  processingReceipts,
+  refunds,
+  sessions,
+  sources,
+} from "./schema.js";
 
 const Login = type({ token: "24 <= string <= 256", "+": "reject" });
 const ListQuery = type({
@@ -130,7 +138,62 @@ export function operatorRoutes(app: FastifyInstance, connection: Database) {
   });
   app.get<{ Params: { id: string } }>("/api/events/:id", async (request) => {
     const session = await authenticate(connection, request);
-    return { event: await eventForOperator(connection, session.sourceId, request.params.id) };
+    const event = await eventForOperator(connection, session.sourceId, request.params.id);
+    const history = await connection.db
+      .select()
+      .from(attempts)
+      .where(eq(attempts.inboxId, event.id))
+      .orderBy(desc(attempts.number))
+      .limit(51);
+    const [receipt] = await connection.db
+      .select()
+      .from(processingReceipts)
+      .where(eq(processingReceipts.inboxId, event.id))
+      .limit(1);
+    const [projection] = await connection.db
+      .select()
+      .from(refunds)
+      .where(
+        and(eq(refunds.sourceId, session.sourceId), eq(refunds.refundId, event.payload.refundId)),
+      )
+      .limit(1);
+    const ledger = await connection.db
+      .select()
+      .from(completions)
+      .where(
+        and(
+          eq(completions.sourceId, session.sourceId),
+          eq(completions.refundId, event.payload.refundId),
+        ),
+      )
+      .limit(1);
+    return {
+      event,
+      attempts: history.slice(0, 50).reverse(),
+      attemptsNextOffset: history.length > 50 ? 50 : null,
+      receipt: receipt ?? null,
+      projection: projection ?? null,
+      completions: ledger,
+    };
+  });
+  app.get<{ Params: { id: string } }>("/api/events/:id/attempts", async (request) => {
+    const session = await authenticate(connection, request);
+    const event = await eventForOperator(connection, session.sourceId, request.params.id);
+    const query = ListQuery.omit("state")(request.query);
+    if (query instanceof type.errors) throw new RequestError(400, "Invalid history pagination");
+    const limit = Number(query.limit ?? 50);
+    const offset = Number(query.offset ?? 0);
+    const items = await connection.db
+      .select()
+      .from(attempts)
+      .where(eq(attempts.inboxId, event.id))
+      .orderBy(desc(attempts.number))
+      .limit(limit)
+      .offset(offset);
+    return {
+      items,
+      nextOffset: items.length === limit && offset + limit <= 10000 ? offset + limit : null,
+    };
   });
   app.get<{ Params: { id: string } }>("/api/events/:id/receipt", async (request) => {
     const session = await authenticate(connection, request);

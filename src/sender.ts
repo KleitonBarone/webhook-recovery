@@ -7,7 +7,7 @@ export function fixture() {
     schemaVersion: 1,
     type: "refund.status_changed",
     eventId: randomUUID(),
-    refundId: `refund_${randomUUID().slice(0, 8)}`,
+    refundId: `refund_${randomUUID()}`,
     version: 1,
     status: "completed",
   });

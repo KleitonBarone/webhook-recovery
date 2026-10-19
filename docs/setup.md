@@ -4,6 +4,12 @@ Use Node 24.20.0 and pnpm 11.23.0. On Windows, Docker Engine and Compose run in
 WSL Ubuntu. Node processes and dependencies stay on Windows. On Linux, the same
 commands call Docker directly. PostgreSQL is pinned to 18.6 Alpine.
 
+On Windows the runner owns a foreground WSL session until Docker teardown finishes.
+Its open input pipe keeps Ubuntu alive during Windows-side tests; coordinator exit
+closes the pipe. The manifest records its PID and exact run marker for recovery.
+This needs no WSL settings changes. Microsoft explains that
+[systemd services alone do not keep WSL alive](https://learn.microsoft.com/en-us/windows/wsl/systemd).
+
 ```powershell
 pnpm install --frozen-lockfile
 pnpm env:check
@@ -37,13 +43,16 @@ the browser bundle. The console will join this command when implemented.
 
 In a second shell, `pnpm sender -- success` sends one local signed event and
 `pnpm sender -- duplicate` concurrently sends the same bytes five times. Both
-print acceptance receipts. The initial worker is idle until business processing
-is implemented. See [the contract](contract.md) for signatures and authenticated
-inspection. Keep generated credentials out of URLs and shared output.
+print acceptance receipts. The worker applies refund snapshots asynchronously;
+inspect processing separately through the authenticated API. See
+[the contract](contract.md) and [processing](processing.md). Keep generated
+credentials out of URLs and shared output.
 
 Ctrl+C stops development services and preserves the database. From another shell,
 `pnpm dev:down` performs the same shutdown. `pnpm db:up`, `pnpm db:down`,
 `pnpm db:migrate`, and `pnpm db:seed` manage the retained development environment.
+On Windows, `db:up` also stays in the foreground to hold its WSL session; keep that
+terminal open until finished. Ctrl+C stops PostgreSQL and preserves its volume.
 Existing ports and unrelated Docker resources are never stopped or removed.
 
 ```powershell

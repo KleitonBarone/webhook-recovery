@@ -7,6 +7,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -81,3 +82,50 @@ export const attempts = pgTable(
   },
   (table) => [uniqueIndex("attempt_event_number").on(table.inboxId, table.number)],
 );
+export const refundStatus = pgEnum("refund_status", ["pending", "completed", "failed"]);
+export const refunds = pgTable(
+  "refund_projections",
+  {
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id),
+    refundId: text("refund_id").notNull(),
+    version: integer().notNull(),
+    status: refundStatus().notNull(),
+    lastInboxId: uuid("last_inbox_id")
+      .notNull()
+      .references(() => inbox.id),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.sourceId, table.refundId] })],
+);
+export const completions = pgTable(
+  "completion_entries",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    sourceId: text("source_id")
+      .notNull()
+      .references(() => sources.id),
+    refundId: text("refund_id").notNull(),
+    action: text().notNull().default("completion"),
+    inboxId: uuid("inbox_id")
+      .notNull()
+      .references(() => inbox.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("completion_business_identity").on(table.sourceId, table.refundId, table.action),
+    check("completion_action", sql`${table.action} = 'completion'`),
+  ],
+);
+export const receiptDecision = pgEnum("receipt_decision", ["applied", "same_version", "stale"]);
+export const processingReceipts = pgTable("processing_receipts", {
+  inboxId: uuid("inbox_id")
+    .primaryKey()
+    .references(() => inbox.id),
+  attemptId: uuid("attempt_id")
+    .notNull()
+    .references(() => attempts.id),
+  decision: receiptDecision().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
