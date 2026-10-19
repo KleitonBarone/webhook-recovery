@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { rename } from "node:fs/promises";
 import { createServer } from "node:net";
 import { arch, cpus, platform, release, totalmem } from "node:os";
 import { resolve } from "node:path";
@@ -7,6 +8,25 @@ import { promisify } from "node:util";
 
 export const execute = promisify(execFile);
 export const root = resolve(import.meta.dirname, "..");
+// Windows readers can briefly deny replacement; keep the previous manifest intact.
+export async function replaceManifest(pending: string, target: string) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await rename(pending, target);
+      return;
+    } catch (error) {
+      if (
+        process.platform !== "win32" ||
+        attempt >= 40 ||
+        !(error instanceof Error) ||
+        !("code" in error) ||
+        !["EPERM", "EACCES", "EBUSY"].includes(String(error.code))
+      )
+        throw error;
+      await setTimeout(50);
+    }
+  }
+}
 const linuxRoot = root
   .replace(/\\/g, "/")
   .replace(/^([A-Z]):/i, (_, drive: string) => `/mnt/${drive.toLowerCase()}`);

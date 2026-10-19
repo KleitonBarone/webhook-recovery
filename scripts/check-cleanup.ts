@@ -77,6 +77,8 @@ const exited = new Promise<void>((resolve) => child.once("exit", () => resolve()
 let id: string | undefined;
 try {
   await until(async () => {
+    if (child.exitCode !== null || child.signalCode !== null)
+      throw new Error("Verification coordinator exited before full-stack readiness");
     const found = (await readdir(runRoot)).find((candidate) => !before.includes(candidate));
     if (!found) return false;
     id = found;

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { type ChildProcess, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { createWriteStream } from "node:fs";
-import { copyFile, mkdir, readdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join, resolve, sep } from "node:path";
 import { parseEnv } from "node:util";
 import { type } from "arktype";
@@ -27,6 +27,7 @@ import {
   docker,
   execute,
   readyHttp,
+  replaceManifest,
   root,
   runtimeInfo,
   until,
@@ -56,7 +57,7 @@ function location(id: string) {
 async function save(run: Manifest) {
   const pending = join(location(run.id), `manifest.${process.pid}.new.json`);
   await writeFile(pending, JSON.stringify(run, null, 2));
-  await rename(pending, join(location(run.id), "manifest.json"));
+  await replaceManifest(pending, join(location(run.id), "manifest.json"));
 }
 async function load(id: string) {
   const run = Manifest.assert(
