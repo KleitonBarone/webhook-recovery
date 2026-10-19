@@ -1,0 +1,445 @@
+{
+  "revision": "bebc97eed1730ef01320058b8c38614b6186e691",
+  "run": "9edceaa73013d160",
+  "recordedAt": "2026-10-19T19:45:23.079Z",
+  "environment": "Windows Node + WSL PostgreSQL, real local console",
+  "browser": "156.0.8078.4",
+  "leaseMsDuringCrashProof": 2000,
+  "duplicates": {
+    "receipt": "1ee0358e-4aba-4287-8369-115ec6cf12ca",
+    "redeliveries": 3,
+    "attempts": 1,
+    "completions": 1
+  },
+  "ordering": {
+    "newer": {
+      "id": "fa180ce9-f909-4c6f-a6b7-081afda9f39b",
+      "eventId": "7b4ba7b1-d754-4a46-97a1-a363538e561c",
+      "acceptedAt": "2026-10-19T19:45:48.448Z"
+    },
+    "older": {
+      "id": "27f6378c-8ebe-4bfa-ac28-4edf865d5540",
+      "eventId": "d69cd84f-7023-4135-9940-6b626c89a74b",
+      "acceptedAt": "2026-10-19T19:45:48.600Z"
+    },
+    "projection": {
+      "sourceId": "demo",
+      "refundId": "walkthrough_ordered_refund",
+      "version": 2,
+      "status": "completed",
+      "lastInboxId": "fa180ce9-f909-4c6f-a6b7-081afda9f39b",
+      "updatedAt": "2026-10-19T19:45:48.534Z"
+    },
+    "completions": 1
+  },
+  "replay": {
+    "receipt": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+    "acceptancePreserved": true,
+    "originalAttempts": [
+      {
+        "id": "7b477dc0-c448-4d5e-8709-d80d55f5103b",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 1,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:03.084Z",
+        "finishedAt": "2026-10-19T19:46:03.098Z",
+        "outcome": "retry_scheduled",
+        "reason": "synthetic_unavailable",
+        "cycleNumber": 1,
+        "cycleAttempt": 1,
+        "replayId": null,
+        "retryAt": "2026-10-19T19:46:04.071Z",
+        "failureCode": "synthetic_unavailable"
+      },
+      {
+        "id": "6910822a-4438-49bb-8d8b-709156c8c621",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 2,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:04.075Z",
+        "finishedAt": "2026-10-19T19:46:04.085Z",
+        "outcome": "retry_scheduled",
+        "reason": "synthetic_unavailable",
+        "cycleNumber": 1,
+        "cycleAttempt": 2,
+        "replayId": null,
+        "retryAt": "2026-10-19T19:46:05.772Z",
+        "failureCode": "synthetic_unavailable"
+      },
+      {
+        "id": "616abe41-8b7d-47f7-be11-213e365e193d",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 3,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:05.820Z",
+        "finishedAt": "2026-10-19T19:46:05.831Z",
+        "outcome": "dead_lettered",
+        "reason": "retry_budget_exhausted",
+        "cycleNumber": 1,
+        "cycleAttempt": 3,
+        "replayId": null,
+        "retryAt": null,
+        "failureCode": "synthetic_unavailable"
+      }
+    ],
+    "finalAttempts": [
+      {
+        "id": "7b477dc0-c448-4d5e-8709-d80d55f5103b",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 1,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:03.084Z",
+        "finishedAt": "2026-10-19T19:46:03.098Z",
+        "outcome": "retry_scheduled",
+        "reason": "synthetic_unavailable",
+        "cycleNumber": 1,
+        "cycleAttempt": 1,
+        "replayId": null,
+        "retryAt": "2026-10-19T19:46:04.071Z",
+        "failureCode": "synthetic_unavailable"
+      },
+      {
+        "id": "6910822a-4438-49bb-8d8b-709156c8c621",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 2,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:04.075Z",
+        "finishedAt": "2026-10-19T19:46:04.085Z",
+        "outcome": "retry_scheduled",
+        "reason": "synthetic_unavailable",
+        "cycleNumber": 1,
+        "cycleAttempt": 2,
+        "replayId": null,
+        "retryAt": "2026-10-19T19:46:05.772Z",
+        "failureCode": "synthetic_unavailable"
+      },
+      {
+        "id": "616abe41-8b7d-47f7-be11-213e365e193d",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 3,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:05.820Z",
+        "finishedAt": "2026-10-19T19:46:05.831Z",
+        "outcome": "dead_lettered",
+        "reason": "retry_budget_exhausted",
+        "cycleNumber": 1,
+        "cycleAttempt": 3,
+        "replayId": null,
+        "retryAt": null,
+        "failureCode": "synthetic_unavailable"
+      },
+      {
+        "id": "0debc3c3-ae7a-4083-baa7-36bf5eb13530",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "number": 4,
+        "workerId": "worker-b056985e-bc31-4772-af7e-730e7c1bcd11",
+        "startedAt": "2026-10-19T19:46:23.922Z",
+        "finishedAt": "2026-10-19T19:46:23.939Z",
+        "outcome": "processed",
+        "reason": "snapshot_applied",
+        "cycleNumber": 2,
+        "cycleAttempt": 1,
+        "replayId": "72ff7d70-a4c9-493c-a84d-4f3f8ab2eb28",
+        "retryAt": null,
+        "failureCode": null
+      }
+    ],
+    "replays": [
+      {
+        "id": "72ff7d70-a4c9-493c-a84d-4f3f8ab2eb28",
+        "sourceId": "demo",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "operatorId": "5f59d73fecf45adee435490b6c1dcee2423d1b3ffcc293bb99e531a9345fa0ca",
+        "idempotencyKey": "7ff85c26-c40b-4021-ad55-c3b1f6c36a28",
+        "reason": "Repaired the local handler after checking exhausted retries.",
+        "cycleNumber": 2,
+        "requestedAt": "2026-10-19T19:46:23.837Z"
+      }
+    ],
+    "completions": [
+      {
+        "id": "e692184f-b2e6-4b1e-8f24-6dcf935781bc",
+        "sourceId": "demo",
+        "refundId": "refund_0934dcc8-26cf-408f-986d-f3fce0b9e5b4",
+        "action": "completion",
+        "inboxId": "1e4c1004-7d91-4d37-90ad-1269f8445ea4",
+        "createdAt": "2026-10-19T19:46:23.930Z"
+      }
+    ]
+  },
+  "overview": {
+    "durationMs": 81389.0717,
+    "chapters": [
+      {
+        "start": 274.8363999999999,
+        "text": "A signed fictional refund event enters a durable PostgreSQL inbox. Acceptance is separate from successful processing."
+      },
+      {
+        "start": 12786.7164,
+        "text": "Three identical redeliveries return the original receipt. The event still has one processing attempt and one local completion."
+      },
+      {
+        "start": 25721.6544,
+        "text": "Version 2 was applied before version 1 arrived. The older snapshot is recorded as stale; the completed projection stays at version 2."
+      },
+      {
+        "start": 39823.1759,
+        "text": "This fictional handler keeps failing. Automatic retries have a bounded budget and preserve every attempt."
+      },
+      {
+        "start": 55404.799699999996,
+        "text": "The operator repairs the demo cause, then requests replay with a reason. Repair alone does not rewrite or restart the accepted event."
+      },
+      {
+        "start": 62975.2869,
+        "text": "Replay succeeded in a new processing cycle. The original receipt and bytes are unchanged, all three failures remain, and exactly one local completion exists."
+      }
+    ]
+  },
+  "crashProofs": [
+    {
+      "scenario": "termination_before_commit",
+      "kind": "actual_process_termination",
+      "signal": "SIGKILL",
+      "leaseMs": 2000,
+      "receipt": {
+        "id": "0c2798ec-8061-4713-ad39-f240f9944862",
+        "eventId": "f3204aa5-2a0d-41d6-99c2-3d83da7ae036",
+        "acceptedAt": "2026-10-19T19:47:46.032Z"
+      },
+      "barrier": {
+        "event": "worker_paused",
+        "boundary": "before_commit",
+        "inboxId": "0c2798ec-8061-4713-ad39-f240f9944862",
+        "attemptId": "61c07b1f-863f-4bf8-925b-25fc26457215",
+        "pid": 7324
+      },
+      "before": {
+        "state": "processing",
+        "leaseUntil": "2026-10-19T19:47:48.986Z",
+        "attempts": [
+          {
+            "id": "61c07b1f-863f-4bf8-925b-25fc26457215",
+            "number": 1,
+            "outcome": "running",
+            "workerId": "worker-04cf32bc-40e9-4903-8044-6c8d3ad3386b"
+          }
+        ],
+        "completionCount": 0,
+        "receiptCount": 0,
+        "projectionVersion": null
+      },
+      "after": {
+        "state": "processed",
+        "leaseUntil": null,
+        "attempts": [
+          {
+            "id": "61c07b1f-863f-4bf8-925b-25fc26457215",
+            "number": 1,
+            "outcome": "abandoned",
+            "workerId": "worker-04cf32bc-40e9-4903-8044-6c8d3ad3386b"
+          },
+          {
+            "id": "320ac416-02fd-4fd4-b161-b650920cb77d",
+            "number": 2,
+            "outcome": "processed",
+            "workerId": "worker-3fcf1629-1a60-4e90-9d6f-05af5d82934a"
+          }
+        ],
+        "completionCount": 1,
+        "receiptCount": 1,
+        "projectionVersion": 1
+      }
+    },
+    {
+      "scenario": "termination_after_commit",
+      "kind": "actual_process_termination",
+      "signal": "SIGKILL",
+      "leaseMs": 2000,
+      "receipt": {
+        "id": "1f484f22-298f-4341-b84e-7c1cb7aaca8a",
+        "eventId": "f7f4b4cc-2360-4655-9cdd-1ce737245241",
+        "acceptedAt": "2026-10-19T19:47:49.527Z"
+      },
+      "barrier": {
+        "event": "worker_paused",
+        "boundary": "after_commit",
+        "inboxId": "1f484f22-298f-4341-b84e-7c1cb7aaca8a",
+        "attemptId": "6b3991a4-e081-4884-beb7-b11f899ea6a6",
+        "pid": 24632
+      },
+      "before": {
+        "state": "processed",
+        "leaseUntil": null,
+        "attempts": [
+          {
+            "id": "6b3991a4-e081-4884-beb7-b11f899ea6a6",
+            "number": 1,
+            "outcome": "processed",
+            "workerId": "worker-c2e86666-f68d-42f6-b508-9d6380644871"
+          }
+        ],
+        "completionCount": 1,
+        "receiptCount": 1,
+        "projectionVersion": 1
+      },
+      "after": {
+        "state": "processed",
+        "leaseUntil": null,
+        "attempts": [
+          {
+            "id": "6b3991a4-e081-4884-beb7-b11f899ea6a6",
+            "number": 1,
+            "outcome": "processed",
+            "workerId": "worker-c2e86666-f68d-42f6-b508-9d6380644871"
+          }
+        ],
+        "completionCount": 1,
+        "receiptCount": 1,
+        "projectionVersion": 1
+      }
+    },
+    {
+      "scenario": "expired_owner_resumes",
+      "kind": "paused_process_takeover",
+      "leaseMs": 2000,
+      "receipt": {
+        "id": "2b616950-4011-4ba8-bb25-6ef44230ad48",
+        "eventId": "b0a5ac3a-0a3b-41c6-b31c-ef500903c6fa",
+        "acceptedAt": "2026-10-19T19:47:52.483Z"
+      },
+      "barrier": {
+        "event": "worker_paused",
+        "boundary": "claimed",
+        "inboxId": "2b616950-4011-4ba8-bb25-6ef44230ad48",
+        "attemptId": "aa8a004f-cf69-4403-bf12-4673c2ddce55",
+        "pid": 12124
+      },
+      "before": {
+        "state": "processed",
+        "leaseUntil": null,
+        "attempts": [
+          {
+            "id": "aa8a004f-cf69-4403-bf12-4673c2ddce55",
+            "number": 1,
+            "outcome": "abandoned",
+            "workerId": "worker-06b95008-ce9b-4d4a-b8df-0e2a9bf98538"
+          },
+          {
+            "id": "0a854df4-31cf-496e-890f-c8894edce216",
+            "number": 2,
+            "outcome": "processed",
+            "workerId": "worker-fcfcfbdc-153a-4615-9707-7f388b7985a4"
+          }
+        ],
+        "completionCount": 1,
+        "receiptCount": 1,
+        "projectionVersion": 1
+      },
+      "after": {
+        "state": "processed",
+        "leaseUntil": null,
+        "attempts": [
+          {
+            "id": "aa8a004f-cf69-4403-bf12-4673c2ddce55",
+            "number": 1,
+            "outcome": "abandoned",
+            "workerId": "worker-06b95008-ce9b-4d4a-b8df-0e2a9bf98538"
+          },
+          {
+            "id": "0a854df4-31cf-496e-890f-c8894edce216",
+            "number": 2,
+            "outcome": "processed",
+            "workerId": "worker-fcfcfbdc-153a-4615-9707-7f388b7985a4"
+          }
+        ],
+        "completionCount": 1,
+        "receiptCount": 1,
+        "projectionVersion": 1
+      }
+    }
+  ],
+  "forceKills": [
+    {
+      "pid": 7324,
+      "boundary": "before_commit",
+      "inboxId": "0c2798ec-8061-4713-ad39-f240f9944862",
+      "at": "2026-10-19T19:47:47.540Z",
+      "completionCount": 0,
+      "processingReceipt": null,
+      "projection": null
+    },
+    {
+      "pid": 24632,
+      "boundary": "after_commit",
+      "inboxId": "1f484f22-298f-4341-b84e-7c1cb7aaca8a",
+      "at": "2026-10-19T19:47:50.898Z",
+      "completionCount": 1,
+      "processingReceipt": {
+        "inboxId": "1f484f22-298f-4341-b84e-7c1cb7aaca8a",
+        "attemptId": "6b3991a4-e081-4884-beb7-b11f899ea6a6",
+        "decision": "applied",
+        "createdAt": "2026-10-19T19:47:50.503Z"
+      },
+      "projection": {
+        "sourceId": "demo",
+        "refundId": "refund_71ecb792-c94e-4dab-a5e6-2cabe744569a",
+        "version": 1,
+        "status": "completed",
+        "lastInboxId": "1f484f22-298f-4341-b84e-7c1cb7aaca8a",
+        "updatedAt": "2026-10-19T19:47:50.503Z"
+      }
+    }
+  ],
+  "engineering": {
+    "durationMs": 172052.3469,
+    "chapters": [
+      {
+        "start": 448.66990000000806,
+        "text": "The architecture is one API, one worker, and PostgreSQL. Signed HTTP acceptance commits first; asynchronous processing has its own durable history."
+      },
+      {
+        "start": 18465.818400000004,
+        "text": "Identity is source plus event ID. HMAC covers the exact timestamp and request bytes. Changed bytes under an existing identity are rejected rather than replacing history."
+      },
+      {
+        "start": 36474.91650000001,
+        "text": "A transaction combines the refund projection, processing receipt, completion ledger, attempt outcome, and inbox outcome. The guarantee covers these database-local effects."
+      },
+      {
+        "start": 52867.66940000001,
+        "text": "Now the normal worker is stopped. Owned test workers will be killed at real commit boundaries. These demonstrations use two-second leases; normal leases are thirty seconds."
+      },
+      {
+        "start": 62347.081000000006,
+        "text": "Before commit: no projection, processing receipt, or completion has committed. Killing the actual worker PID 7324 now."
+      },
+      {
+        "start": 65706.31280000001,
+        "text": "After commit: the processing receipt and one completion already exist. Killing the actual worker PID 24632 now."
+      },
+      {
+        "start": 71428.3406,
+        "text": "Before-commit termination rolled back all local effects. After lease expiry, recovery recorded an abandoned attempt and a successful second attempt, with one completion."
+      },
+      {
+        "start": 98630.9007,
+        "text": "After-commit termination preserved the completed transaction. A replacement worker processed a fresh probe, while this original event kept one attempt and one completion."
+      },
+      {
+        "start": 122831.1856,
+        "text": "The old owner paused after claiming. A replacement acquired the expired lease and committed. Resuming the old owner produced lost_lease and changed no committed outcome."
+      },
+      {
+        "start": 144920.6283,
+        "text": "The proof includes actual worker PIDs, barrier observations, database snapshots, and process logs. Run pnpm verify to repeat it; disposable services and secrets are removed afterward."
+      },
+      {
+        "start": 159936.6967,
+        "text": "Scope: synthetic events and one local database. External payments or network calls need their own idempotency protocol. This finite lab retains deduplication identities without expiry."
+      }
+    ]
+  },
+  "completed": true,
+  "finishedAt": "2026-10-19T19:49:38.349Z"
+}

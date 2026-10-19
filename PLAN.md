@@ -2,11 +2,12 @@
 
 ## Current state and planning scope
 
-Inspected on 2026-10-19. Local `main` and remote `main` point to `6631fa1`.
-The repository has two commits and contains only planning documents and Git
-configuration. There is no application, package manifest, CI, issue, or PR yet.
-GitHub permits merge commits, squash merges, and rebase merges. There are no
-branch protections or rulesets at this inspection.
+At the initial inspection on 2026-10-19, local and remote `main` pointed to
+`6631fa1` and contained planning documents only. The five milestones below are
+now implemented and verified. [DELIVERY.md](DELIVERY.md) records actual PRs,
+commits, checks, merge records, and evidence. The original sequence and acceptance
+gates remain here as the delivery design. GitHub permitted merge commits with
+no branch protections or rulesets at the initial inspection.
 
 The planning sessions prepared this sequence without creating commits or PRs.
 Kleiton authorized complete execution, including pushes and actual PR merges, on
@@ -177,10 +178,10 @@ showing failure investigation and recovery; avoid exhaustive UI snapshots.
 ### 5. Reproducible engineering evidence
 
 - [x] Add a finite scenario runner with machine-readable correctness results.
-- [ ] Rehearse a clean checkout and document all working local commands.
-- [ ] Prove repeated verification and cleanup leave no temporary services,
+- [x] Rehearse a clean checkout and document all working local commands.
+- [x] Prove repeated verification and cleanup leave no temporary services,
   databases, volumes, or accumulating scratch artifacts behind.
-- [ ] Record an English walkthrough showing failure, duplicate suppression, and replay.
+- [x] Record an English walkthrough showing failure, duplicate suppression, and replay.
 - [x] Write a case study explaining acceptance versus processing, transaction
   boundaries, stale-event policy, and known limits.
 - [x] Publish a modest measured workload with revision, hardware, environment,
@@ -788,6 +789,11 @@ The merge flags and check inspection commands follow the official
 [check documentation](https://cli.github.com/manual/gh_pr_checks).
 
 ## Final audit after PR 9 merges
+
+These are post-merge handoff gates. The final documentation PR cannot record its
+own future merge SHA or main CI result. Its GitHub record and the final runtime
+audit linked from [DELIVERY.md](DELIVERY.md) supply those results after merge.
+The checked milestone evidence above is available before that merge.
 
 - [ ] Every planned PR and any corrective PR has an actual URL and `MERGED` state.
 - [ ] Each recorded merge commit is an ancestor of `origin/main`; local `main`

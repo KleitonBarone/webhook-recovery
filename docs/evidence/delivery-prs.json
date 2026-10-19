@@ -1,0 +1,343 @@
+[
+  {
+    "number": 1,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/1",
+    "title": "Complete the project delivery plan",
+    "state": "MERGED",
+    "reviewedHead": "2dbe3aab4b9258deac488588acfa60f64d8e30d4",
+    "workCommits": [
+      {
+        "sha": "2dbe3aab4b9258deac488588acfa60f64d8e30d4",
+        "subject": "Complete the project delivery plan"
+      }
+    ],
+    "checks": [],
+    "mergeSha": "4223f1b6fa09a6d42c6be9d593953ec4f6ec9401",
+    "mergedAt": "2026-10-19T13:28:47Z",
+    "mainCheck": null
+  },
+  {
+    "number": 2,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/2",
+    "title": "Add a reproducible local development environment",
+    "state": "MERGED",
+    "reviewedHead": "422f0abfdda94863eb4df03729ce8ceab35d2b49",
+    "workCommits": [
+      {
+        "sha": "a85ceeed08023f5cd51ee8891133394e51d85f05",
+        "subject": "Set up the strict TypeScript workspace"
+      },
+      {
+        "sha": "8f2c93e1b084d2d298a9d8907a49bf477c5cdb46",
+        "subject": "Add the isolated PostgreSQL development environment"
+      },
+      {
+        "sha": "422f0abfdda94863eb4df03729ce8ceab35d2b49",
+        "subject": "Run reproducible checks in CI"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T13:40:31Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39262065785/job/118092011137",
+        "name": "verify",
+        "startedAt": "2026-10-19T13:39:55Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "84b09214883ee92f4bd341769d52e799ea943b10",
+    "mergedAt": "2026-10-19T13:41:19Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39262279879,
+      "headSha": "84b09214883ee92f4bd341769d52e799ea943b10",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39262279879"
+    }
+  },
+  {
+    "number": 3,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/3",
+    "title": "Accept signed events into a durable inbox",
+    "state": "MERGED",
+    "reviewedHead": "21815cdb9fd884ffd6bfe9ced24c43ec6c059ddb",
+    "workCommits": [
+      {
+        "sha": "b9a0c1d125da9c752ae42a879626c3a7b6319584",
+        "subject": "Define and verify the signed event contract"
+      },
+      {
+        "sha": "db428dcf79ea2d19f02bea07392a051e6d420c17",
+        "subject": "Persist acceptance receipts and deduplicate intake"
+      },
+      {
+        "sha": "21815cdb9fd884ffd6bfe9ced24c43ec6c059ddb",
+        "subject": "Expose scoped operator inspection"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T13:54:41Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39264120867/job/118099126038",
+        "name": "verify",
+        "startedAt": "2026-10-19T13:54:06Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "78cb43d157b77ec686153e05c31f41462f69cb64",
+    "mergedAt": "2026-10-19T13:55:11Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39264296790,
+      "headSha": "78cb43d157b77ec686153e05c31f41462f69cb64",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39264296790"
+    }
+  },
+  {
+    "number": 4,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/4",
+    "title": "Process refund snapshots without repeating effects",
+    "state": "MERGED",
+    "reviewedHead": "684a07ee44d75ac1344d970f28f8a1402b37c4a3",
+    "workCommits": [
+      {
+        "sha": "5bd20cccf01eeb70ae064eeeaba0f2dc3800c3c7",
+        "subject": "Claim processing attempts with durable worker leases"
+      },
+      {
+        "sha": "684a07ee44d75ac1344d970f28f8a1402b37c4a3",
+        "subject": "Apply refund snapshots and completion receipts atomically"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T14:35:52Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39270272643/job/118120418266",
+        "name": "verify",
+        "startedAt": "2026-10-19T14:35:09Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "e2e59132e6e3043986ccc64bd7001023325d1255",
+    "mergedAt": "2026-10-19T14:38:03Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39270727807,
+      "headSha": "e2e59132e6e3043986ccc64bd7001023325d1255",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39270727807"
+    }
+  },
+  {
+    "number": 5,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/5",
+    "title": "Recover failed processing with retries and replay",
+    "state": "MERGED",
+    "reviewedHead": "0edd31fc72e95f51bb04ecd08201fbf82b916f78",
+    "workCommits": [
+      {
+        "sha": "e13341a22a479dbf660e08b2751a24b06b557604",
+        "subject": "Persist bounded retries and terminal failures"
+      },
+      {
+        "sha": "48100efd4edf629d0ee6dd0ea680efbd09e0f543",
+        "subject": "Schedule audited idempotent manual replay"
+      },
+      {
+        "sha": "0edd31fc72e95f51bb04ecd08201fbf82b916f78",
+        "subject": "Verify recovery budgets and replay permissions"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T14:53:35Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39272898201/job/118129579922",
+        "name": "verify",
+        "startedAt": "2026-10-19T14:52:40Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "e7a9d1d491508b4576792d84fcaf967b8f38f3d7",
+    "mergedAt": "2026-10-19T14:55:10Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39273297395,
+      "headSha": "e7a9d1d491508b4576792d84fcaf967b8f38f3d7",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39273297395"
+    }
+  },
+  {
+    "number": 6,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/6",
+    "title": "Prove recovery across worker termination",
+    "state": "MERGED",
+    "reviewedHead": "3a30912facd3ba997cf82b3a565c33844d403742",
+    "workCommits": [
+      {
+        "sha": "0104a39bda396a0eba826b6ecd817035427faf80",
+        "subject": "Add deterministic worker termination scenarios"
+      },
+      {
+        "sha": "3a30912facd3ba997cf82b3a565c33844d403742",
+        "subject": "Report finite recovery scenarios as machine-readable evidence"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T15:16:10Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39276325710/job/118141454727",
+        "name": "verify",
+        "startedAt": "2026-10-19T15:15:15Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "75fd0b5c05a5f958223c260cabd12e1ba4e92689",
+    "mergedAt": "2026-10-19T15:16:37Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39276553771,
+      "headSha": "75fd0b5c05a5f958223c260cabd12e1ba4e92689",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39276553771"
+    }
+  },
+  {
+    "number": 7,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/7",
+    "title": "Investigate and replay events in the console",
+    "state": "MERGED",
+    "reviewedHead": "312258ae9b8b92ae6af11e0db9fd83dea22bac9f",
+    "workCommits": [
+      {
+        "sha": "f19545e29153873cdbba86d5dcf471704e349c4a",
+        "subject": "Add authenticated inbox and attempt views"
+      },
+      {
+        "sha": "1d069802fa04aa1d86f1140088e4b1b31de94aca",
+        "subject": "Connect replay and local simulator controls"
+      },
+      {
+        "sha": "1f4fe23ff37b2a2bf6e4f310e7e4f09ae7db4a0a",
+        "subject": "Tolerate brief Windows manifest reader locks"
+      },
+      {
+        "sha": "312258ae9b8b92ae6af11e0db9fd83dea22bac9f",
+        "subject": "Require readiness from owned API and console processes"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T19:04:50Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39307769703/job/118249177263",
+        "name": "verify",
+        "startedAt": "2026-10-19T19:03:40Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "9c46ddfdd37932d62bdf97c0a95eba10d5ef8ebd",
+    "mergedAt": "2026-10-19T19:06:49Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39308235291,
+      "headSha": "9c46ddfdd37932d62bdf97c0a95eba10d5ef8ebd",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39308235291"
+    }
+  },
+  {
+    "number": 8,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/8",
+    "title": "Make processing and recovery outcomes inspectable",
+    "state": "MERGED",
+    "reviewedHead": "f71f16d8cf1eb4c1cf8fb37a74b9a0d6c0c318b9",
+    "workCommits": [
+      {
+        "sha": "af3cfbc7f146b2b3c150ecaa3a8630eecd41e247",
+        "subject": "Add redacted processing logs and bounded counters"
+      },
+      {
+        "sha": "f71f16d8cf1eb4c1cf8fb37a74b9a0d6c0c318b9",
+        "subject": "Verify failure investigation and recovery in the browser"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T19:21:47Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39310086353/job/118257102419",
+        "name": "verify",
+        "startedAt": "2026-10-19T19:20:02Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "c43ecdae982ca7720c15978f8e20e8bf2b90cb34",
+    "mergedAt": "2026-10-19T19:23:20Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39310567830,
+      "headSha": "c43ecdae982ca7720c15978f8e20e8bf2b90cb34",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39310567830"
+    }
+  },
+  {
+    "number": 9,
+    "url": "https://github.com/KleitonBarone/webhook-recovery/pull/9",
+    "title": "Measure the local lab and document its limits",
+    "state": "MERGED",
+    "reviewedHead": "b0d3e8757312f34fdd61bd41929c5d4ef0a4d8ba",
+    "workCommits": [
+      {
+        "sha": "f1076b70eee830feeacbd07d61d38d3204d34a45",
+        "subject": "Measure finite local workloads with correctness checks"
+      },
+      {
+        "sha": "b0d3e8757312f34fdd61bd41929c5d4ef0a4d8ba",
+        "subject": "Document architecture and measured recovery limits"
+      }
+    ],
+    "checks": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-19T19:33:47Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39311768855/job/118262890822",
+        "name": "verify",
+        "startedAt": "2026-10-19T19:32:01Z",
+        "status": "COMPLETED",
+        "workflowName": "Check"
+      }
+    ],
+    "mergeSha": "bebc97eed1730ef01320058b8c38614b6186e691",
+    "mergedAt": "2026-10-19T19:35:27Z",
+    "mainCheck": {
+      "conclusion": "success",
+      "databaseId": 39312263954,
+      "headSha": "bebc97eed1730ef01320058b8c38614b6186e691",
+      "status": "completed",
+      "url": "https://github.com/KleitonBarone/webhook-recovery/actions/runs/39312263954"
+    }
+  }
+]
