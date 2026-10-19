@@ -20,6 +20,7 @@ export function send(
   timestamp?: number,
 ) {
   return fetch(`${base}/webhooks/${source}`, {
+    signal: AbortSignal.timeout(15000),
     method: "POST",
     headers: {
       "content-type": "application/json",

@@ -35,3 +35,23 @@ Processing status belongs to authenticated inspection, not the acceptance receip
 
 This simulator's monotonic versions are a custom contract. They do not describe
 ordering guarantees from an arbitrary real payment provider.
+
+## Operator inspection
+
+Sender signing credentials grant no operator access. Seeded operator and viewer
+tokens are separate, expire after 24 hours, and are restricted to one source.
+`POST /api/session` accepts `{token}` and sets an HttpOnly, SameSite=Strict cookie
+scoped to `/api`. Login and logout require an Origin matching the local request
+host. Cookies use HTTP only for this loopback lab. Inspection also accepts
+`Authorization: Bearer <operator-token>` for local CLI use. No token belongs in a URL.
+
+`GET /api/session` returns role and source. `DELETE /api/session` clears the cookie.
+`GET /api/events` returns items with immutable identity, acceptance time, snapshot,
+and current processing state. Optional `state`, `limit` from 1 to 100, and `offset`
+from 0 to 10,000 bound each query. The server applies the session's source; callers
+cannot supply another source. `nextOffset` is null at the page limit/end.
+
+`GET /api/events/:id` returns the accepted event and original bytes as UTF-8 text.
+`GET /api/events/:id/receipt` returns its stable acceptance receipt. A permitted
+viewer can inspect; another source sees 404. Missing, expired, or disabled-source
+sessions receive 401. Processing attempts and replay are added in subsequent PRs.

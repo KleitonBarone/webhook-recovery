@@ -38,6 +38,19 @@ export async function verifyIntake(
       (await send(base, config.sourceSecret, JSON.stringify({ ...payload, version: 2 }))).status,
       409,
     );
+    assert.equal((await send(base, config.sourceSecret, ` ${body}`)).status, 409);
+    const racing = fixture();
+    const conflicts = await Promise.all(
+      Array.from({ length: 10 }, (_, index) =>
+        send(base, config.sourceSecret, JSON.stringify({ ...racing, version: index + 1 })),
+      ),
+    );
+    assert.equal(conflicts.filter((response) => response.status === 202).length, 1);
+    assert.equal(conflicts.filter((response) => response.status === 409).length, 9);
+    assert.equal(
+      (await connection.db.select().from(inbox).where(eq(inbox.eventId, racing.eventId))).length,
+      1,
+    );
     const other = await send(base, otherSecret(config.sourceSecret), body, "other");
     assert.equal(other.status, 202);
     assert.notEqual(Receipt.assert(await other.json()).id, first.id);

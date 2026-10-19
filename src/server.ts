@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import type { Database } from "./database.js";
 import { RequestError } from "./errors.js";
 import { intakeRoutes } from "./intake.js";
+import { operatorRoutes } from "./operator.js";
 
 export function createServer(connection: Database) {
   const app = Fastify({
@@ -35,5 +36,6 @@ export function createServer(connection: Database) {
     return reply.code(code).send({ error: message });
   });
   intakeRoutes(app, connection);
+  operatorRoutes(app, connection);
   return app;
 }

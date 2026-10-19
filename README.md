@@ -9,9 +9,9 @@ worker at defined failure boundaries. A small console will show the event histor
 and its effect on a synthetic refund projection.
 
 **Status: implementation in progress.** The isolated local PostgreSQL environment,
-API/worker entry points, migrations, and verification/cleanup runner are available.
-Signed intake, business processing, and the console follow in the
-[implementation plan](PLAN.md).
+API/worker entry points, signed durable intake, authenticated inspection, migrations,
+and verification/cleanup runner are available. Business processing and the console
+follow in the [implementation plan](PLAN.md).
 
 Use Node 24.20.0, pnpm 11.23.0, and Docker/Compose in WSL Ubuntu on Windows:
 
