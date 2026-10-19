@@ -26,6 +26,8 @@ export function configuration(env = process.env) {
     retryBaseMs: Number(env.RETRY_BASE_MS ?? 1000),
   });
   const url = new URL(value.databaseUrl);
+  if (new Set([value.sourceSecret, value.operatorToken, value.viewerToken]).size !== 3)
+    throw new Error("Source, operator, and viewer credentials must be distinct");
   if (
     !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) ||
     !/^\/webhook_recovery_[a-z0-9_]+$/.test(url.pathname)

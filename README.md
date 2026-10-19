@@ -10,8 +10,9 @@ and its effect on a synthetic refund projection.
 
 **Status: implementation in progress.** The isolated local PostgreSQL environment,
 API/worker entry points, signed durable intake, authenticated inspection, migrations,
-versioned refund processing, and verification/cleanup runner are available.
-Retries, manual replay, and the console follow in the [implementation plan](PLAN.md).
+versioned refund processing, bounded retries, audited replay, and verification/cleanup
+runner are available. See the [recovery runbook](docs/recovery.md). The console and
+crash evidence follow in the [implementation plan](PLAN.md).
 
 Use Node 24.20.0, pnpm 11.23.0, and Docker/Compose in WSL Ubuntu on Windows:
 

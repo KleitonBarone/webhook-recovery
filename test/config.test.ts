@@ -20,5 +20,9 @@ test("configuration rejects remote or unrelated databases and invalid ports", ()
     }),
   );
   assert.throws(() => configuration({ ...env, API_PORT: "70000" }));
+  assert.throws(() => configuration({ ...env, VIEWER_TOKEN: env.OPERATOR_TOKEN }));
+  assert.throws(() => configuration({ ...env, OPERATOR_TOKEN: env.SOURCE_SECRET }));
+  assert.throws(() => configuration({ ...env, MAX_ATTEMPTS: "0" }));
+  assert.throws(() => configuration({ ...env, RETRY_BASE_MS: "99" }));
   assert.throws(() => configuration({}));
 });

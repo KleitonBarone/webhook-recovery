@@ -1,5 +1,6 @@
 import { createHash, createHmac } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
@@ -58,5 +59,8 @@ export async function seedDatabase(connection: Database, config: Configuration) 
         expiresAt: new Date(Date.now() + 86400000),
       },
     ])
-    .onConflictDoNothing();
+    .onConflictDoUpdate({
+      target: schema.sessions.tokenHash,
+      set: { expiresAt: sql`excluded.expires_at` },
+    });
 }

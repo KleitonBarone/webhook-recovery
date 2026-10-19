@@ -53,6 +53,11 @@ export async function verifyRetries(base: string, config: Configuration) {
       scheduled.nextAttemptAt.getTime(),
     );
     assert.equal(await claim(connection, "too-early", 60000), null);
+    assert.equal(
+      (await connection.db.select().from(completions).where(eq(completions.inboxId, transient.id)))
+        .length,
+      0,
+    );
     // A fresh database connection observes the committed schedule, not process memory.
     const reopened = database(config);
     try {

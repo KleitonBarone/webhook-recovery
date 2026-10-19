@@ -96,3 +96,11 @@ Event detail includes the latest 50 replay requests and a pagination offset for
 older audit entries. `/api/events/:id/replays` provides bounded source-scoped
 history. Clearing a synthetic fault affects subsequent attempts; it does not erase
 failure history or itself schedule a replay.
+
+Recovery verification includes shared-key races across two events, competing keys
+on one event, rollback between audit insertion and intent update, fresh budgets,
+and replay after another event already completed the same refund. It restarts the
+API with replay intent queued. A separate experiment restarts a real worker while
+its retry is scheduled, then confirms the original deadline and attempt survive.
+That test uses a 60-second retry base and advances only the disposable due time;
+the report records this separately from the default 1-second worker policy.
