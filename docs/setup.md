@@ -1,0 +1,59 @@
+# Local setup and verification
+
+Use Node 24.20.0 and pnpm 11.23.0. On Windows, Docker Engine and Compose run in
+WSL Ubuntu. Node processes and dependencies stay on Windows. On Linux, the same
+commands call Docker directly. PostgreSQL is pinned to 18.6 Alpine.
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm env:check
+pnpm check
+pnpm verify
+```
+
+`verify` allocates its own loopback database/API ports, a small nonoverlapping
+Docker subnet, and a unique Compose project. It migrates an empty database, seeds
+twice, starts the real API/worker, checks readiness, and exercises implemented
+integration scenarios. Its `finally` path removes owned processes, containers,
+networks, disposable volumes, and private credential files. It exits nonzero if
+verification or cleanup fails. CI uses the same commands and Compose definition.
+
+Reports are in `.local/reports/<run-id>.json`. Keep at most five reports and 100 MiB
+of scratch output. Per-process logs are capped at 1 MiB; container logs rotate at
+10 MiB with two files. Reports retain bounded failure output. Selected engineering
+evidence is copied to documented deliverables before scratch report rotation.
+
+For an interactive local developer environment:
+
+```powershell
+pnpm dev
+```
+
+This creates the retained `webhook-recovery` Compose project and
+`webhook_recovery_dev` database. The API uses 4331 and PostgreSQL uses 55433.
+Generated source/operator credentials are in `.local/runs/dev/app.env`, restricted
+to the current Windows user or mode 0600 on Linux. Never commit or copy them into
+the browser bundle. The console will join this command when implemented.
+
+Ctrl+C stops development services and preserves the database. From another shell,
+`pnpm dev:down` performs the same shutdown. `pnpm db:up`, `pnpm db:down`,
+`pnpm db:migrate`, and `pnpm db:seed` manage the retained development environment.
+Existing ports and unrelated Docker resources are never stopped or removed.
+
+```powershell
+pnpm env:status
+pnpm cleanup --run <run-id>
+```
+
+An abrupt OS/process termination can skip `finally`. The manifest in
+`.local/runs/<run-id>/manifest.json` records owned processes, container/volume IDs,
+and the exact project. `cleanup` reconciles the manifest with Docker ownership
+labels and process command markers, tears down only that disposable run, and can
+be repeated. It refuses the retained `dev` environment. Never use global Docker
+pruning or WSL shutdown to recover a test run. Pre-existing networks are preserved,
+even if their address pools prevent automatic subnet allocation.
+
+The pinned PostgreSQL image and one pnpm dependency tree are reused during work.
+No custom image builds or builders are required. Temporary containers and volumes
+are removed after each verification. Record image/disk usage when the development
+task ends and remove a task-pulled image only when no retained service needs it.

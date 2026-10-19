@@ -1,8 +1,11 @@
 import { configuration } from "./config.js";
+import { database } from "./database.js";
 import { createServer } from "./server.js";
 
 const config = configuration();
-const app = createServer();
+const connection = database(config);
+const app = createServer(connection);
+app.addHook("onClose", () => connection.client.end());
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => void app.close());
 }

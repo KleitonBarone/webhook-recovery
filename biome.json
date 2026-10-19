@@ -4,5 +4,5 @@
   "files": { "includes": ["**", "!drizzle/meta", "!pnpm-lock.yaml", "!dist"] },
   "formatter": { "indentStyle": "space", "lineWidth": 100 },
   "javascript": { "formatter": { "quoteStyle": "double" } },
-  "linter": { "rules": { "recommended": true } }
+  "linter": { "rules": { "preset": "recommended" } }
 }
