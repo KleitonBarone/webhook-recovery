@@ -72,7 +72,7 @@ the first configured attempts or fail permanently. Their classified outcomes are
 intentional handler simulations, separate from database failures and real worker
 termination. Tests control jitter, compare persisted deadlines, and explicitly
 advance disposable retry/lease metadata to avoid wall-clock sleeps. Authenticated
-demo controls are added in the later scenario milestone.
+demo controls are described in the [scenario guide](scenarios.md).
 
 ## Manual replay
 

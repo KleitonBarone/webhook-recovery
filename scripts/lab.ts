@@ -36,6 +36,7 @@ import {
   runtimeInfo,
   until,
 } from "./runtime.js";
+import { measureWorkload } from "./workload.js";
 
 const runs = join(root, ".local", "runs");
 const reports = join(root, ".local", "reports");
@@ -462,7 +463,7 @@ async function diskBytes(path: string): Promise<number> {
   );
   return sizes.reduce((sum, size) => sum + size, 0);
 }
-async function verify() {
+async function verify(mode: "verify" | "measure" = "verify") {
   const unfinished = (await readdir(runs).catch(() => [])).filter((id) => id !== "dev");
   if (unfinished.length)
     throw new Error(`Reconcile unfinished runs first with cleanup --run: ${unfinished.join(", ")}`);
@@ -470,6 +471,7 @@ async function verify() {
   let run: Manifest | undefined;
   const report: {
     run: string;
+    mode: "verify" | "measure";
     revision: string;
     dirty: boolean;
     node: string;
@@ -478,7 +480,7 @@ async function verify() {
       leaseMs: number;
       maxAttempts: number;
       retryBaseMs: number;
-      restartTestRetryBaseMs: number;
+      restartTestRetryBaseMs?: number;
     };
     error?: string;
     cleaned: boolean;
@@ -488,10 +490,12 @@ async function verify() {
     demos?: Awaited<ReturnType<typeof verifyDemo>>;
     browser?: Awaited<ReturnType<typeof verifyBrowser>>;
     browserScreenshot?: string;
+    workload?: Awaited<ReturnType<typeof measureWorkload>>;
     environment?: Awaited<ReturnType<typeof runtimeInfo>>;
     databaseLogs?: string;
   } = {
     run: id,
+    mode,
     revision: (await execute("git", ["rev-parse", "HEAD"], { cwd: root })).stdout.trim(),
     dirty: !!(await execute("git", ["status", "--porcelain"], { cwd: root })).stdout.trim(),
     node: process.version,
@@ -536,8 +540,14 @@ async function verify() {
       leaseMs: config.leaseMs,
       maxAttempts: config.maxAttempts,
       retryBaseMs: config.retryBaseMs,
-      restartTestRetryBaseMs: 60000,
+      ...(mode === "verify" ? { restartTestRetryBaseMs: 60000 } : {}),
     };
+    if (mode === "measure") {
+      report.workload = await measureWorkload(base, config, id, controller.signal);
+      if (!report.workload.passed) throw new Error("Workload correctness failed");
+      report.checks.push("finite-workload-receipts-processing-and-completion-invariants");
+      return;
+    }
     const accepted = await verifyIntake(base, config, async () => {
       await stopProcesses(currentRun);
       await startProcess(currentRun, "api", "src/api.ts");
@@ -701,6 +711,7 @@ async function verify() {
           logs: undefined,
           workerLogs: undefined,
           databaseLogs: undefined,
+          workload: report.workload ? { ...report.workload, deliveries: undefined } : undefined,
         }),
       );
     }
@@ -708,7 +719,7 @@ async function verify() {
 }
 
 const command = process.argv[2];
-if (command === "verify") await verify();
+if (command === "verify" || command === "measure") await verify(command);
 else if (command === "check") {
   await docker(["version", "--format", "{{.Server.Version}}"]);
   console.log(JSON.stringify({ node: process.version, docker: "available", root }));

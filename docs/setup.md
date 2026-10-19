@@ -113,3 +113,7 @@ changing lifecycle behavior; normal CI runs isolated verification once. See the
 [finite scenario guide](scenarios.md) for the demo controls and reset boundary.
 `pnpm verify:cleanup --browser-only` focuses on browser success, failure, and abrupt
 coordinator recovery when the other infrastructure paths were already verified.
+
+`pnpm measure` runs the [finite workload](measurements.md) in its own disposable
+stack. Its raw rows remain under the same report retention policy. Archive selected
+evidence before later runs can rotate it; measurements never use the developer DB.
