@@ -44,8 +44,9 @@ concurrent first-row/version updates, stale snapshots, distinct completion event
 source isolation, and rollback after a database-enforced processing receipt
 failure. It also sends a signed HTTP event through a separate worker process and
 inspects the committed result through the authenticated API. Lease-expiry
-integration tests explicitly change disposable lease metadata. Controlled process
-termination at commit boundaries is added in the later crash-evidence milestone.
+integration tests explicitly change disposable lease metadata. The separate
+[crash scenarios](scenarios.md) terminate real workers at observed commit boundaries
+and let leases expire naturally.
 
 The locking choices follow PostgreSQL's
 [row-lock and advisory-lock documentation](https://www.postgresql.org/docs/current/explicit-locking.html).

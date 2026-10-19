@@ -4,8 +4,10 @@ import { claim } from "./claims.js";
 import { configuration } from "./config.js";
 import { database } from "./database.js";
 import { processClaim } from "./processing.js";
+import { workerPause } from "./worker-pause.js";
 
 const config = configuration();
+const pause = workerPause(config.demo);
 const connection = database(config);
 const workerId = `worker-${randomUUID()}`;
 const stop = new AbortController();
@@ -19,7 +21,11 @@ try {
     try {
       const owned = await claim(connection, workerId, config.leaseMs, config.maxAttempts);
       if (owned) {
-        const result = await processClaim(connection, owned, config);
+        await pause("claimed", owned);
+        const result = await processClaim(connection, owned, config, Math.random, () =>
+          pause("before_commit", owned),
+        );
+        await pause("after_commit", owned);
         console.log(
           JSON.stringify({
             event: "processing_finished",

@@ -107,6 +107,7 @@ export async function withOwnedClaim(
   connection: Database,
   owned: Claim,
   handle: (tx: Transaction, event: typeof inbox.$inferSelect) => Promise<Outcome>,
+  beforeFinish?: () => Promise<void>,
 ) {
   try {
     return await connection.db.transaction(async (tx) => {
@@ -119,6 +120,7 @@ export async function withOwnedClaim(
       const [event] = await tx.select().from(inbox).where(fence).for("update");
       if (!event) throw new LeaseLost();
       const result = await handle(tx, event);
+      await beforeFinish?.();
       const finished = await tx
         .update(inbox)
         .set({
