@@ -22,8 +22,17 @@ export function createServer(connection: Database) {
       error instanceof Error && "statusCode" in error && typeof error.statusCode === "number"
         ? error.statusCode
         : 500;
+    const cause = error instanceof Error && error.cause ? error.cause : error;
+    const failureCode =
+      cause && typeof cause === "object" && "code" in cause ? cause.code : undefined;
     request.log.error(
-      { failure: error instanceof Error ? error.name : "UnknownError" },
+      {
+        failure: error instanceof Error ? error.name : "UnknownError",
+        code:
+          typeof failureCode === "string" && /^[A-Z0-9_]{1,32}$/.test(failureCode)
+            ? failureCode
+            : undefined,
+      },
       "Request failed",
     );
     const code = status >= 400 && status < 500 ? status : 500;

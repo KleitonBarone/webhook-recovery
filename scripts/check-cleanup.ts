@@ -3,16 +3,35 @@ import { spawn } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type } from "arktype";
-import { docker, execute, root, until } from "./runtime.js";
+import { docker, execute, readyHttp, root, until } from "./runtime.js";
 
 const args = ["--import", "tsx", "scripts/lab.ts"];
 const runRoot = join(root, ".local", "runs");
 async function inventory() {
-  return Promise.all([
+  const resources = await Promise.all([
     docker(["ps", "-aq", "--filter", "label=recovery.run"]),
     docker(["volume", "ls", "-q", "--filter", "label=recovery.run"]),
     docker(["network", "ls", "-q", "--filter", "label=recovery.run"]),
   ]).then((results) => results.map((result) => result.stdout.trim()));
+  const processes =
+    process.platform === "win32"
+      ? (
+          await execute(
+            "powershell",
+            [
+              "-NoProfile",
+              "-Command",
+              "Get-CimInstance Win32_Process | Where-Object { ($_.Name -eq 'node.exe' -and $_.CommandLine -match '--title=webhook-recovery-') -or ($_.Name -eq 'wsl.exe' -and $_.CommandLine -match 'webhook-recovery-(dev|[a-f0-9]{16})-wsl') } | Sort-Object ProcessId | ForEach-Object { $_.ProcessId }",
+            ],
+            { windowsHide: true },
+          )
+        ).stdout.trim()
+      : (await execute("ps", ["-eo", "args="])).stdout
+          .split("\n")
+          .filter((line) => /--title=webhook-recovery-/.test(line))
+          .sort()
+          .join("\n");
+  return [...resources, processes];
 }
 const baseline = await inventory();
 for (const fault of ["", "", "startup", "test", "interrupt"]) {
@@ -30,10 +49,20 @@ for (const fault of ["", "", "startup", "test", "interrupt"]) {
     assert.equal(failure.code, 1);
     result = failure;
   }
-  const report = type({ cleaned: "boolean" }).assert(
+  const report = type({ cleaned: "boolean", "error?": "string" }).assert(
     JSON.parse(result.stdout.trim().split("\n").at(-1) ?? "{}"),
   );
   assert.equal(report.cleaned, true, result.stderr);
+  if (fault)
+    assert.equal(
+      report.error,
+      fault === "startup"
+        ? "Injected startup failure"
+        : fault === "test"
+          ? "Injected test failure"
+          : "Verification interrupted",
+    );
+  else assert.equal(report.error, undefined);
   assert.deepEqual(await inventory(), baseline);
   console.log(`Verified cleanup: ${fault || "success"}`);
 }
@@ -53,12 +82,20 @@ try {
     const found = (await readdir(runRoot)).find((candidate) => !before.includes(candidate));
     if (!found) return false;
     id = found;
-    const manifest = type({ processes: "unknown[]", apiPort: "number" }).assert(
-      JSON.parse(await readFile(join(runRoot, found, "manifest.json"), "utf8")),
+    const text = await readFile(join(runRoot, found, "manifest.json"), "utf8").catch(
+      (error: unknown) => {
+        if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
+        throw error;
+      },
     );
+    if (!text) return false;
+    const manifest = type({
+      processes: type({ marker: "string" }).array(),
+      apiPort: "number",
+    }).assert(JSON.parse(text));
     return (
-      manifest.processes.length === 2 &&
-      (await fetch(`http://127.0.0.1:${manifest.apiPort}/health`)).ok
+      manifest.processes.filter((child) => !child.marker.endsWith("-wsl")).length === 2 &&
+      (await readyHttp(`http://127.0.0.1:${manifest.apiPort}/health`))
     );
   });
 } finally {

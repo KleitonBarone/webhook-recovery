@@ -125,12 +125,12 @@ or arbitrary filesystem deletion to reset a scenario.
 
 ### 1. Durable intake
 
-- [ ] Scaffold API/database and initial migrations with a local signed sender.
-- [ ] Verify exact bytes, source identity, bounded body size, and timestamp tolerance.
-- [ ] Persist an immutable event and initial processing intent before returning 202.
-- [ ] Add scoped identity deduplication and conflict responses under concurrent intake.
-- [ ] Add authenticated event inspection and verified setup/seed/check commands.
-- [ ] Provide an isolated verification environment with readiness checks, owned
+- [x] Scaffold API/database and initial migrations with a local signed sender.
+- [x] Verify exact bytes, source identity, bounded body size, and timestamp tolerance.
+- [x] Persist an immutable event and initial processing intent before returning 202.
+- [x] Add scoped identity deduplication and conflict responses under concurrent intake.
+- [x] Add authenticated event inspection and verified setup/seed/check commands.
+- [x] Provide an isolated verification environment with readiness checks, owned
   resource tracking, automatic teardown, and an interruption cleanup command.
 
 Done when identical retries return the same durable event after an API restart,
@@ -509,6 +509,12 @@ available ports, and database ownership without printing secrets. Apply a
 configurable CPU/memory ceiling and log rotation to project containers. Keep
 worker concurrency and fixture counts bounded. Start with one database container
 per verification run; do not build an environment orchestration service.
+
+Windows runs hold one manifest-owned foreground WSL session until Docker teardown
+finishes. Systemd services alone do not keep Ubuntu alive, so Windows Node tests
+cannot rely on the Docker daemon to do so. An open input pipe owns that session;
+coordinator exit closes it. Keep `dev` and Windows `db:up` in the foreground and
+release the session during cleanup, without changing WSL settings.
 
 Separate the retained developer database from verification, scenario, rehearsal,
 and measurement data. Every temporary run gets a unique Compose project such as

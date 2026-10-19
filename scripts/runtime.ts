@@ -78,8 +78,14 @@ export async function availableSubnet() {
 export async function until(check: () => Promise<boolean>, timeout = 30000) {
   const end = Date.now() + timeout;
   do {
-    if (await check().catch(() => false)) return;
+    if (await check()) return;
     await setTimeout(100);
   } while (Date.now() < end);
   throw new Error("Readiness/assertion deadline exceeded");
+}
+
+// Startup alone may retry connection refusal or a not-yet-ready health response.
+export async function readyHttp(url: string) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(2000) }).catch(() => null);
+  return response?.ok ?? false;
 }
