@@ -1,44 +1,78 @@
 # Webhook recovery
 
-An incoming webhook recovery lab. It accepts signed events into a
-durable inbox, processes them asynchronously, and gives an operator a way to
-investigate and recover failed processing.
+A local webhook inbox for investigating failed processing and recovering it
+without losing the original event. Send a signed fictional refund update, inspect
+its durable acceptance receipt, follow each processing attempt, and replay a failed
+cycle with an audited reason.
 
-The local lab sends duplicate events, delivers older versions late, and stops a
-worker at defined failure boundaries. The console shows the event history
-and its effect on a synthetic refund projection.
+This is an engineering lab for developers evaluating durable receivers. A `202`
+response proves acceptance. The console shows whether processing later succeeded,
+scheduled a retry, ignored an older snapshot, or needs operator attention.
 
-**Status: implementation in progress.** The isolated local PostgreSQL environment,
-API/worker entry points, signed durable intake, authenticated inspection, migrations,
-versioned refund processing, bounded retries, audited replay, and verification/cleanup
-runner are available, including [actual worker crash scenarios](docs/scenarios.md).
-The React console provides authenticated inspection, sample controls, and audited replay through
-`pnpm dev`. See [local setup](docs/setup.md), the [recovery runbook](docs/recovery.md),
-and the remaining [implementation plan](PLAN.md).
+![Recovered event with preserved acceptance and processing history](docs/evidence/recovered.png)
 
-Use Node 24.20.0, pnpm 11.23.0, and Docker/Compose in WSL Ubuntu on Windows:
+## Try it locally
+
+Use Node 24.20.0, pnpm 11.23.0, and Docker Engine with Compose. On Windows, Docker
+runs through WSL Ubuntu while Node and dependencies stay on Windows. The
+[setup guide](docs/setup.md) covers readiness, credentials, ports, and shutdown.
 
 ```powershell
 pnpm install --frozen-lockfile
 pnpm browser:install
+pnpm env:check
 pnpm check
 pnpm verify
 ```
 
-Verification creates and removes its own disposable environment. See
-[local setup](docs/setup.md) for interactive development, diagnostics, and cleanup.
+Verification provisions a disposable PostgreSQL database, migrates and seeds it,
+starts the real API, worker, and console, then exercises HTTP, database, crash,
+and browser scenarios. It removes its services, volume, browser profile, and
+private credentials afterward. Linux hosts may need
+`pnpm browser:install --with-deps`.
 
-Everything runs with fictional events and a local sender. No external webhook
-provider, customer, payment account, or public endpoint is required. Tests and
-measurements will identify their author-performed local environment.
+For an interactive session, run `pnpm dev` and open http://127.0.0.1:4330.
+Sign in with the generated `OPERATOR_TOKEN` in `.local/runs/dev/app.env`.
+Send an **Exhaust retries** sample, inspect its three failed attempts, repair the
+demo cause, and request replay with a reason. The recovered event keeps its original
+receipt and failures. A viewer credential provides read-only inspection.
 
-This project is distinct from [Webhook Redrive](https://github.com/KleitonBarone/webhook-redrive),
-which delivers outbound webhooks. That repository includes receiver examples, but
-this project makes the receiving application's durable processing and recovery
-workflow the product. It can run independently; using Redrive as a sender is an
-optional later integration.
+Ctrl+C or `pnpm dev:down` stops development services and preserves the developer
+database. `pnpm env:status` reports owned processes and disk usage.
+`pnpm cleanup --run <run-id>` recovers an interrupted disposable run and is
+safe to repeat. Normal development reuses one dependency tree and image cache;
+scratch reports have a five-report, 100 MiB limit.
 
-The intended stack is TypeScript, a small Node.js API and worker, PostgreSQL, and a
-React/Vite investigation console. The business effects in the lab stay in one
-database transaction. The project will explain that boundary rather than promise
-exactly-once effects across arbitrary external services.
+## What it proves
+
+Signed intake deduplicates by source and event ID. Workers claim with expiring
+leases and fence late owners. A single PostgreSQL transaction applies a versioned
+refund snapshot, its processing receipt, completion ledger, and final attempt
+outcome. Older snapshots remain visible without overwriting newer state.
+
+The [case study](docs/case-study.md) explains those boundaries and includes
+architecture diagrams. The [scenario guide](docs/scenarios.md) documents actual
+before/after-commit worker termination and resumed-owner fencing. The
+[recovery runbook](docs/recovery.md) explains retries and audited replay.
+
+The [recorded walkthroughs](docs/walkthrough.md) include English captions,
+screenshots, and raw crash proof. The [fresh-checkout rehearsal](docs/rehearsal.md)
+records working commands and matching before/after resource inventories.
+[Delivery history](DELIVERY.md) links the merged implementation PRs and checks.
+
+## Measurements and limits
+
+One finite local workload accepted 600 deliveries for 500 unique events with zero
+failures or timeouts. Acceptance p95 was 19.12 ms; draining all processing took
+8.91 seconds from first dispatch. See the [protocol and raw results](docs/measurements.md)
+for the exact revision, hardware, concurrency, timing definitions, and invariants.
+These measurements do not establish production capacity or availability.
+
+The implementation uses strict TypeScript, Fastify, Drizzle/PostgreSQL, and
+React/Vite/Tailwind/TanStack Query. All business effects are synthetic and local
+to one database. External payments or network effects need a separate idempotency
+protocol. The finite lab retains deduplication identities without expiry.
+
+No provider account, customer traffic, public endpoint, or hosting is required.
+[Webhook Redrive](https://github.com/KleitonBarone/webhook-redrive) is the separate
+outbound sender; integrating it is optional. This repository runs independently.
