@@ -4,17 +4,28 @@ import type { Database } from "./database.js";
 import { attempts, inbox } from "./schema.js";
 
 type Transaction = Parameters<Parameters<Database["db"]["transaction"]>[0]>[0];
-export type Outcome = { state: "processed" | "ignored_stale" | "dead_lettered"; reason: string };
+export type Outcome = (
+  | { state: "processed" | "ignored_stale" | "dead_lettered"; reason: string }
+  | { state: "retry_scheduled"; reason: string; nextAttemptAt: Date }
+) & { failureCode?: string };
 class LeaseLost extends Error {}
 
 // The row lock, attempt insertion, and durable lease commit as one short transaction.
-export async function claim(connection: Database, workerId: string, leaseMs: number) {
+export async function claim(
+  connection: Database,
+  workerId: string,
+  leaseMs: number,
+  maxAttempts = 3,
+) {
   if (
     !Number.isInteger(leaseMs) ||
     leaseMs < 100 ||
     leaseMs > 60000 ||
     !workerId ||
-    workerId.length > 128
+    workerId.length > 128 ||
+    !Number.isInteger(maxAttempts) ||
+    maxAttempts < 1 ||
+    maxAttempts > 10
   )
     throw new Error("Invalid claim settings");
   return connection.db.transaction(async (tx) => {
@@ -24,6 +35,7 @@ export async function claim(connection: Database, workerId: string, leaseMs: num
       .where(
         or(
           eq(inbox.state, "received"),
+          and(eq(inbox.state, "retry_scheduled"), lte(inbox.nextAttemptAt, sql`clock_timestamp()`)),
           and(eq(inbox.state, "processing"), lte(inbox.leaseUntil, sql`clock_timestamp()`)),
         ),
       )
@@ -45,9 +57,31 @@ export async function claim(connection: Database, workerId: string, leaseMs: num
         .returning({ id: attempts.id });
       if (abandoned.length !== 1) throw new Error("Claim has no running attempt");
     }
+    if (event.cycleAttempt >= maxAttempts) {
+      await tx
+        .update(inbox)
+        .set({
+          state: "dead_lettered",
+          reason: "retry_budget_exhausted",
+          leaseToken: null,
+          leaseUntil: null,
+          nextAttemptAt: null,
+        })
+        .where(eq(inbox.id, event.id));
+      return null;
+    }
     const attemptId = randomUUID();
     const number = event.attemptNumber + 1;
-    await tx.insert(attempts).values({ id: attemptId, inboxId: event.id, number, workerId });
+    const cycleAttempt = event.cycleAttempt + 1;
+    await tx.insert(attempts).values({
+      id: attemptId,
+      inboxId: event.id,
+      number,
+      workerId,
+      cycleNumber: event.cycleNumber,
+      cycleAttempt,
+      replayId: event.currentReplayId,
+    });
     const [owned] = await tx
       .update(inbox)
       .set({
@@ -56,6 +90,8 @@ export async function claim(connection: Database, workerId: string, leaseMs: num
         leaseUntil: sql`clock_timestamp() + ${leaseMs} * interval '1 millisecond'`,
         attemptNumber: number,
         reason: null,
+        cycleAttempt,
+        nextAttemptAt: null,
       })
       .where(eq(inbox.id, event.id))
       .returning();
@@ -85,13 +121,25 @@ export async function withOwnedClaim(
       const result = await handle(tx, event);
       const finished = await tx
         .update(inbox)
-        .set({ state: result.state, reason: result.reason, leaseToken: null, leaseUntil: null })
+        .set({
+          state: result.state,
+          reason: result.reason,
+          leaseToken: null,
+          leaseUntil: null,
+          nextAttemptAt: result.state === "retry_scheduled" ? result.nextAttemptAt : null,
+        })
         .where(fence)
         .returning({ id: inbox.id });
       if (finished.length !== 1) throw new LeaseLost();
       const attempt = await tx
         .update(attempts)
-        .set({ outcome: result.state, reason: result.reason, finishedAt: sql`clock_timestamp()` })
+        .set({
+          outcome: result.state,
+          reason: result.reason,
+          finishedAt: sql`clock_timestamp()`,
+          retryAt: result.state === "retry_scheduled" ? result.nextAttemptAt : null,
+          failureCode: result.failureCode ?? null,
+        })
         .where(
           and(
             eq(attempts.id, owned.attemptId),

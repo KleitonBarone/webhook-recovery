@@ -138,11 +138,11 @@ conflicting bodies create no second event, and invalid signatures create no work
 
 ### 2. Business processing
 
-- [ ] Add a worker with bounded, lease-protected claims.
-- [ ] Implement the versioned synthetic refund projection handler.
-- [ ] Atomically commit processing receipt, local effect, and successful outcome.
-- [ ] Add stale-version handling and business-level completion deduplication.
-- [ ] Preserve history for processed, stale, and conflicting events.
+- [x] Add a worker with bounded, lease-protected claims.
+- [x] Implement the versioned synthetic refund projection handler.
+- [x] Atomically commit processing receipt, local effect, and successful outcome.
+- [x] Add stale-version handling and business-level completion deduplication.
+- [x] Preserve history for processed, stale, and conflicting events.
 
 Done when concurrent duplicate events and distinct completion events preserve one
 completion effect, and an older snapshot cannot roll back a newer projection.

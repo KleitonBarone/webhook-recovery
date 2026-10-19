@@ -15,6 +15,9 @@ import { verifyClaims } from "../test/claims.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
 import { verifyOperator } from "../test/operator.integration.js";
 import { verifyProcessing, verifyWorkerProcess } from "../test/processing.integration.js";
+import { verifyRecovery } from "../test/recovery.integration.js";
+import { verifyReplay } from "../test/replay.integration.js";
+import { verifyRetries } from "../test/retries.integration.js";
 import {
   availablePort,
   availableSubnet,
@@ -224,12 +227,17 @@ async function startWsl(run: Manifest) {
     return ready;
   });
 }
-async function startProcess(run: Manifest, name: string, script: string) {
+async function startProcess(
+  run: Manifest,
+  name: string,
+  script: string,
+  overrides: Partial<Record<"RETRY_BASE_MS", string>> = {},
+) {
   const marker = `webhook-recovery-${run.id}-${name}`;
   const log = createWriteStream(join(location(run.id), `${name}.log`), { flags: "w" });
   const child = spawn(process.execPath, [`--title=${marker}`, "--import", "tsx", script], {
     cwd: root,
-    env: { ...process.env, ...(await environment(run)) },
+    env: { ...process.env, ...(await environment(run)), ...overrides },
     windowsHide: true,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -308,7 +316,7 @@ async function startDatabase(id: string) {
     const appEnv = join(location(id), "app.env");
     await writeFile(
       appEnv,
-      `DATABASE_URL=postgres://recovery:${password}@127.0.0.1:${port}/webhook_recovery_${id === "dev" ? "dev" : "verify"}\nAPI_PORT=${run.apiPort}\nDEMO_MODE=true\nSOURCE_SECRET=${randomBytes(24).toString("hex")}\nOPERATOR_TOKEN=${randomBytes(24).toString("hex")}\nVIEWER_TOKEN=${randomBytes(24).toString("hex")}\nLAB_RUN=${id}\n`,
+      `DATABASE_URL=postgres://recovery:${password}@127.0.0.1:${port}/webhook_recovery_${id === "dev" ? "dev" : "verify"}\nAPI_PORT=${run.apiPort}\nDEMO_MODE=true\nSOURCE_SECRET=${randomBytes(24).toString("hex")}\nOPERATOR_TOKEN=${randomBytes(24).toString("hex")}\nVIEWER_TOKEN=${randomBytes(24).toString("hex")}\nLAB_RUN=${id}\nWORKER_LEASE_MS=30000\nMAX_ATTEMPTS=3\nRETRY_BASE_MS=1000\n`,
       { mode: 0o600 },
     );
     await restrictFile(appEnv);
@@ -388,6 +396,12 @@ async function verify() {
     dirty: boolean;
     node: string;
     checks: string[];
+    settings?: {
+      leaseMs: number;
+      maxAttempts: number;
+      retryBaseMs: number;
+      restartTestRetryBaseMs: number;
+    };
     error?: string;
     cleaned: boolean;
     logs?: string;
@@ -425,6 +439,12 @@ async function verify() {
     const base = `http://127.0.0.1:${apiPort}`;
     const currentRun = run;
     const config = configuration(await environment(run));
+    report.settings = {
+      leaseMs: config.leaseMs,
+      maxAttempts: config.maxAttempts,
+      retryBaseMs: config.retryBaseMs,
+      restartTestRetryBaseMs: 60000,
+    };
     const accepted = await verifyIntake(base, config, async () => {
       await stopProcesses(currentRun);
       await startProcess(currentRun, "api", "src/api.ts");
@@ -441,6 +461,18 @@ async function verify() {
     report.checks.push("skip-locked-claims-expiry-takeover-and-write-fencing");
     await verifyProcessing(base, config);
     report.checks.push("atomic-effects-receipts-ordering-business-deduplication");
+    await verifyRetries(base, config);
+    report.checks.push("durable-retry-schedules-classification-and-cycle-budgets");
+    await verifyReplay(base, config);
+    report.checks.push("audited-idempotent-replay-preserves-acceptance-and-failure-history");
+    await verifyRecovery(base, config, async (withWorker) => {
+      await stopProcesses(currentRun);
+      await startProcess(currentRun, "api", "src/api.ts");
+      if (withWorker)
+        await startProcess(currentRun, "worker", "src/worker.ts", { RETRY_BASE_MS: "60000" });
+      await until(() => readyHttp(`${base}/health`));
+    });
+    report.checks.push("replay-races-rollback-permissions-cycle-budgets-and-real-worker-restart");
     await startProcess(currentRun, "worker", "src/worker.ts");
     await verifyWorkerProcess(base, config);
     report.checks.push("real-worker-process-end-to-end");

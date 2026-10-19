@@ -1,11 +1,45 @@
 import { and, eq, sql } from "drizzle-orm";
 import { type Claim, withOwnedClaim } from "./claims.js";
 import type { Database } from "./database.js";
-import { completions, processingReceipts, refunds } from "./schema.js";
+import { defaultRetryPolicy, failureOutcome, type RetryPolicy } from "./retries.js";
+import { completions, processingReceipts, refunds, syntheticFaults } from "./schema.js";
 
-export function processClaim(connection: Database, owned: Claim) {
+export function processClaim(
+  connection: Database,
+  owned: Claim,
+  policy: RetryPolicy = defaultRetryPolicy,
+  jitter = Math.random,
+) {
   return withOwnedClaim(connection, owned, async (tx, event) => {
     const snapshot = event.payload;
+    if (policy.demo) {
+      const [fault] = await tx
+        .select({
+          kind: syntheticFaults.kind,
+          failForAttempts: syntheticFaults.failForAttempts,
+          now: sql`extract(epoch from clock_timestamp()) * 1000`.mapWith(Number),
+        })
+        .from(syntheticFaults)
+        .where(
+          and(
+            eq(syntheticFaults.sourceId, event.sourceId),
+            eq(syntheticFaults.refundId, snapshot.refundId),
+          ),
+        )
+        .limit(1);
+      if (fault && (fault.kind === "permanent" || event.cycleAttempt <= fault.failForAttempts)) {
+        return failureOutcome(
+          {
+            kind: fault.kind,
+            reason:
+              fault.kind === "permanent" ? "synthetic_permanent_failure" : "synthetic_unavailable",
+          },
+          event.cycleAttempt,
+          policy,
+          { now: fault.now, jitter: jitter() },
+        );
+      }
+    }
     // A transaction-scoped aggregate lock also serializes first-row creation.
     // A hash collision only adds contention; all data queries still use both IDs.
     await tx.execute(

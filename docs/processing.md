@@ -49,3 +49,58 @@ termination at commit boundaries is added in the later crash-evidence milestone.
 
 The locking choices follow PostgreSQL's
 [row-lock and advisory-lock documentation](https://www.postgresql.org/docs/current/explicit-locking.html).
+
+## Automatic retries
+
+`MAX_ATTEMPTS` defaults to three claims per processing cycle, including abandoned
+leases. `RETRY_BASE_MS` defaults to 1,000 milliseconds. Transient synthetic handler
+failures use exponential backoff with 20% jitter and a 60-second maximum delay.
+The worker uses PostgreSQL's clock and atomically stores the retry deadline with
+the failed attempt outcome. Claiming clears the current deadline; the previous
+attempt retains its original `retryAt`. A restart does not reset the schedule.
+
+Permanent failures dead-letter immediately. Exhaustion records
+`retry_budget_exhausted`; the attempt retains the underlying `failureCode`.
+Expired leases also consume the cycle budget, so repeated worker loss cannot
+create unbounded automatic attempts. Database errors roll back the transaction
+and leave the lease for recovery. They do not fabricate successful effects or
+failed-attempt commits. Global attempt numbers never reset.
+
+Persistent synthetic fault rules apply only with `DEMO_MODE=true`. A rule can fail
+the first configured attempts or fail permanently. Their classified outcomes are
+intentional handler simulations, separate from database failures and real worker
+termination. Tests control jitter, compare persisted deadlines, and explicitly
+advance disposable retry/lease metadata to avoid wall-clock sleeps. Authenticated
+demo controls are added in the later scenario milestone.
+
+## Manual replay
+
+An operator can post `{ "idempotencyKey": "<uuid>", "reason": "<why>" }` to
+`/api/events/:id/replay` for a `dead_lettered` event. The request requires an
+authenticated operator and a matching local Origin. A viewer has read access only.
+The API trims surrounding reason whitespace and requires 1 to 500 characters.
+
+The inbox lock serializes replay with processing and other replay requests. The
+transaction records an immutable replay audit and queues a new processing cycle
+with a fresh automatic-attempt budget. It preserves original bytes, acceptance,
+versions, business identities, and earlier attempts. New attempts link to that
+replay request. Audit operator IDs derive from the authenticated session identity,
+never from request-supplied operator fields or credentials returned to the client.
+
+Keys are scoped to the trusted source and operator. Reusing one with the same
+event and normalized reason returns the original 202 replay receipt, even after
+processing finishes. Changed content returns 409. A fresh key cannot replay active,
+processed, or stale work. The API never edits a payload to repair it.
+
+Event detail includes the latest 50 replay requests and a pagination offset for
+older audit entries. `/api/events/:id/replays` provides bounded source-scoped
+history. Clearing a synthetic fault affects subsequent attempts; it does not erase
+failure history or itself schedule a replay.
+
+Recovery verification includes shared-key races across two events, competing keys
+on one event, rollback between audit insertion and intent update, fresh budgets,
+and replay after another event already completed the same refund. It restarts the
+API with replay intent queued. A separate experiment restarts a real worker while
+its retry is scheduled, then confirms the original deadline and attempt survive.
+That test uses a 60-second retry base and advances only the disposable due time;
+the report records this separately from the default 1-second worker policy.

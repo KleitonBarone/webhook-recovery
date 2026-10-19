@@ -51,6 +51,11 @@ credentials out of URLs and shared output.
 Ctrl+C stops development services and preserves the database. From another shell,
 `pnpm dev:down` performs the same shutdown. `pnpm db:up`, `pnpm db:down`,
 `pnpm db:migrate`, and `pnpm db:seed` manage the retained development environment.
+Starting development or explicitly running `db:seed` renews the configured demo
+sessions for 24 hours. An expired session stays denied until that seed action.
+Source, operator, and viewer credentials must be distinct. Generated worker
+settings live in the private `app.env`, so unrelated shell settings cannot change
+an isolated run. Adjust retained development settings there when needed.
 On Windows, `db:up` also stays in the foreground to hold its WSL session; keep that
 terminal open until finished. Ctrl+C stops PostgreSQL and preserves its volume.
 Existing ports and unrelated Docker resources are never stopped or removed.
