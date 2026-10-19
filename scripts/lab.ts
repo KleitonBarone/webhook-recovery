@@ -11,6 +11,7 @@ import { configuration } from "../src/config.js";
 import { database, migrateDatabase, seedDatabase } from "../src/database.js";
 import { sources } from "../src/schema.js";
 import { runSender } from "../src/sender.js";
+import { verifyClaims } from "../test/claims.integration.js";
 import { verifyIntake } from "../test/intake.integration.js";
 import { verifyOperator } from "../test/operator.integration.js";
 import { availablePort, availableSubnet, docker, execute, root, until } from "./runtime.js";
@@ -357,6 +358,11 @@ async function verify() {
     report.checks.push("signed-intake-concurrency-conflicts-restart-database-failure");
     await verifyOperator(base, config, accepted);
     report.checks.push("operator-cookie-origin-expiry-source-permissions-bounded-inspection");
+    await stopProcesses(currentRun);
+    await startProcess(currentRun, "api", "src/api.ts");
+    await until(async () => (await fetch(`${base}/health`)).ok);
+    await verifyClaims(base, config);
+    report.checks.push("skip-locked-claims-expiry-takeover-and-write-fencing");
     if (process.env.LAB_FAIL_AT === "test") throw new Error("Injected test failure");
     if (process.env.LAB_FAIL_AT === "interrupt") {
       controller.abort();

@@ -7,6 +7,7 @@ const Configuration = type({
   sourceSecret: "string >= 24",
   operatorToken: "string >= 24",
   viewerToken: "string >= 24",
+  leaseMs: "number.integer >= 100 & number <= 60000",
 });
 
 // Configuration never silently falls back to a shared or production database.
@@ -18,6 +19,7 @@ export function configuration(env = process.env) {
     sourceSecret: env.SOURCE_SECRET,
     operatorToken: env.OPERATOR_TOKEN,
     viewerToken: env.VIEWER_TOKEN,
+    leaseMs: Number(env.WORKER_LEASE_MS ?? 30000),
   });
   const url = new URL(value.databaseUrl);
   if (
