@@ -8,9 +8,21 @@ The local lab will send duplicate events, deliver older versions late, and stop 
 worker at defined failure boundaries. A small console will show the event history
 and its effect on a synthetic refund projection.
 
-**Status: planning only.** The service, console, and runnable scenarios have not
-been implemented. Start with the [implementation plan](PLAN.md), or copy the
-[thread starter](THREAD_START.md) into a separate development conversation.
+**Status: implementation in progress.** The isolated local PostgreSQL environment,
+API/worker entry points, migrations, and verification/cleanup runner are available.
+Signed intake, business processing, and the console follow in the
+[implementation plan](PLAN.md).
+
+Use Node 24.20.0, pnpm 11.23.0, and Docker/Compose in WSL Ubuntu on Windows:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm check
+pnpm verify
+```
+
+Verification creates and removes its own disposable environment. See
+[local setup](docs/setup.md) for interactive development, diagnostics, and cleanup.
 
 Everything runs with fictional events and a local sender. No external webhook
 provider, customer, payment account, or public endpoint is required. Tests and

@@ -1,0 +1,43 @@
+{
+  "name": "webhook-recovery",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=24.20.0 <25"
+  },
+  "scripts": {
+    "api": "node --env-file-if-exists=.env --import tsx src/api.ts",
+    "worker": "node --env-file-if-exists=.env --import tsx src/worker.ts",
+    "dev": "tsx scripts/lab.ts dev",
+    "dev:down": "tsx scripts/lab.ts dev-down",
+    "env:check": "tsx scripts/lab.ts check",
+    "env:status": "tsx scripts/lab.ts status",
+    "db:up": "tsx scripts/lab.ts db-up",
+    "db:down": "tsx scripts/lab.ts db-down",
+    "db:migrate": "tsx scripts/lab.ts migrate",
+    "db:seed": "tsx scripts/lab.ts seed",
+    "db:generate": "drizzle-kit generate",
+    "check": "biome check . && tsc --noEmit && node --import tsx --test test/*.test.ts && pnpm build",
+    "format": "biome check --write .",
+    "build": "tsc -p tsconfig.build.json",
+    "test:integration": "tsx scripts/lab.ts verify",
+    "verify": "tsx scripts/lab.ts verify",
+    "verify:cleanup": "tsx scripts/check-cleanup.ts",
+    "cleanup": "tsx scripts/lab.ts cleanup"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.3",
+    "arktype": "2.2.8",
+    "drizzle-orm": "0.45.4",
+    "fastify": "5.12.7",
+    "postgres": "3.4.9"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "24.19.2",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3"
+  }
+}
