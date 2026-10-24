@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
-import { type ChildProcess, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { createWriteStream } from "node:fs";
 import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { join, resolve, sep } from "node:path";
-import { parseEnv } from "node:util";
+import { join } from "node:path";
 import { type } from "arktype";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { configuration } from "../src/config.js";
@@ -24,364 +21,38 @@ import { verifyProcessing, verifyWorkerProcess } from "../test/processing.integr
 import { verifyRecovery } from "../test/recovery.integration.js";
 import { verifyReplay } from "../test/replay.integration.js";
 import { verifyRetries } from "../test/retries.integration.js";
+import { verifySeedRoles, verifySeedRotation } from "../test/seed.integration.js";
+import { readLogTail } from "./bounded-log.js";
 import {
-  availablePort,
-  availableSubnet,
+  children,
+  cleanup,
+  compose,
+  environment,
+  load,
+  location,
+  type Manifest,
+  ownedProcess,
+  runs,
+  save,
+  startConsole,
+  startDatabase,
+  startProcess,
+  startWsl,
+  stopProcesses,
+} from "./lifecycle.js";
+import { retainReports } from "./reports.js";
+import {
   browserProfilePath,
   docker,
   execute,
   readyHttp,
-  replaceManifest,
   root,
   runtimeInfo,
   until,
 } from "./runtime.js";
 import { measureWorkload } from "./workload.js";
 
-const runs = join(root, ".local", "runs");
 const reports = join(root, ".local", "reports");
-const children = new Map<number, ChildProcess>();
-const Manifest = type({
-  id: "string",
-  project: "string",
-  disposable: "boolean",
-  created: "string",
-  processes: type({ pid: "number.integer", marker: "string", "profile?": "string" }).array(),
-  containers: "string[]",
-  volumes: "string[]",
-  apiPort: "number.integer",
-  "uiPort?": "number.integer",
-});
-type Manifest = typeof Manifest.infer;
-function location(id: string) {
-  if (!/^(dev|[a-f0-9]{16})$/.test(id)) throw new Error("Invalid run ID");
-  const path = resolve(runs, id);
-  if (!path.startsWith(`${resolve(runs)}${sep}`)) throw new Error("Invalid scratch path");
-  return path;
-}
-async function save(run: Manifest) {
-  const pending = join(location(run.id), `manifest.${process.pid}.new.json`);
-  await writeFile(pending, JSON.stringify(run, null, 2));
-  await replaceManifest(pending, join(location(run.id), "manifest.json"));
-}
-async function load(id: string) {
-  const run = Manifest.assert(
-    JSON.parse(await readFile(join(location(id), "manifest.json"), "utf8")),
-  );
-  const project = id === "dev" ? "webhook-recovery" : `webhook-recovery-verify-${id}`;
-  if (run.id !== id || run.project !== project || run.disposable !== (id !== "dev"))
-    throw new Error("Run ownership mismatch");
-  return run;
-}
-function compose(run: Manifest, args: string[]) {
-  return docker([
-    "compose",
-    "-p",
-    run.project,
-    "--env-file",
-    `.local/runs/${run.id}/compose.env`,
-    "-f",
-    "compose.yaml",
-    ...args,
-  ]);
-}
-async function restrictFile(path: string) {
-  if (process.platform === "win32") {
-    await execute(
-      "icacls",
-      [path, "/inheritance:r", "/grant:r", `${process.env.USERDOMAIN}\\${process.env.USERNAME}:F`],
-      { windowsHide: true },
-    );
-  }
-}
-async function environment(run: Manifest) {
-  return parseEnv(await readFile(join(location(run.id), "app.env"), "utf8"));
-}
-async function ownedProcess(pid: number, marker: string) {
-  if (!marker.startsWith(`webhook-recovery-`)) throw new Error("Invalid process marker");
-  if (process.platform === "win32") {
-    const { stdout } = await execute(
-      "powershell",
-      [
-        "-NoProfile",
-        "-Command",
-        `(Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}').CommandLine`,
-      ],
-      { windowsHide: true },
-    );
-    if (marker.endsWith("-browser")) return stdout.includes(`--recovery-run=${marker}`);
-    return marker.endsWith("-wsl")
-      ? stdout.includes("--exec bash") && stdout.includes(marker)
-      : stdout.includes(`--title=${marker}`);
-  }
-  const command = await readFile(`/proc/${pid}/cmdline`, "utf8").catch(() => "");
-  return command.includes(marker);
-}
-async function stopProcesses(run: Manifest, preserveWsl = true) {
-  for (const child of [...run.processes].reverse()) {
-    if (!child.marker.startsWith(`webhook-recovery-${run.id}-`))
-      throw new Error("Process ownership mismatch");
-    if (preserveWsl && child.marker.endsWith("-wsl")) continue;
-    if (await ownedProcess(child.pid, child.marker)) {
-      children.get(child.pid)?.stdin?.end();
-      try {
-        if (child.marker.endsWith("-browser") && process.platform === "win32")
-          await execute("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
-            windowsHide: true,
-            timeout: 5000,
-          });
-        else if (child.marker.endsWith("-browser")) process.kill(-child.pid, "SIGTERM");
-        else process.kill(child.pid, "SIGTERM");
-      } catch (error) {
-        if (await ownedProcess(child.pid, child.marker)) throw error;
-      }
-      await until(async () => !(await ownedProcess(child.pid, child.marker)), 5000).catch(
-        async () => {
-          if (await ownedProcess(child.pid, child.marker)) process.kill(child.pid, "SIGKILL");
-        },
-      );
-    }
-    if (child.profile) {
-      if (!child.marker.endsWith("-browser")) throw new Error("Profile without browser ownership");
-      await rm(browserProfilePath(child.profile), {
-        recursive: true,
-        force: true,
-        maxRetries: 20,
-        retryDelay: 50,
-      });
-    }
-    children.delete(child.pid);
-  }
-  run.processes = preserveWsl ? run.processes.filter((child) => child.marker.endsWith("-wsl")) : [];
-  await save(run);
-}
-async function cleanup(run: Manifest) {
-  try {
-    await stopProcesses(run);
-    const { stdout } = await docker([
-      "ps",
-      "-aq",
-      "--filter",
-      `label=com.docker.compose.project=${run.project}`,
-    ]);
-    for (const id of stdout.trim().split(/\s+/).filter(Boolean)) {
-      const inspected = await docker([
-        "inspect",
-        "--format",
-        '{{index .Config.Labels "recovery.run"}}',
-        id,
-      ]);
-      if (inspected.stdout.trim() !== run.id) throw new Error("Container ownership mismatch");
-    }
-    const volumeList = await docker([
-      "volume",
-      "ls",
-      "-q",
-      "--filter",
-      `label=com.docker.compose.project=${run.project}`,
-    ]);
-    for (const volume of volumeList.stdout.trim().split(/\s+/).filter(Boolean)) {
-      const inspected = await docker([
-        "volume",
-        "inspect",
-        "--format",
-        '{{index .Labels "recovery.run"}}',
-        volume,
-      ]);
-      if (inspected.stdout.trim() !== run.id) throw new Error("Volume ownership mismatch");
-    }
-    await compose(run, ["down", ...(run.disposable ? ["--volumes"] : []), "--remove-orphans"]);
-    const remaining = await docker([
-      "ps",
-      "-aq",
-      "--filter",
-      `label=com.docker.compose.project=${run.project}`,
-    ]);
-    assert.equal(remaining.stdout.trim(), "", "Containers left behind");
-    const networks = await docker([
-      "network",
-      "ls",
-      "-q",
-      "--filter",
-      `label=com.docker.compose.project=${run.project}`,
-    ]);
-    assert.equal(networks.stdout.trim(), "", "Networks left behind");
-    if (run.disposable) {
-      const volumes = await docker([
-        "volume",
-        "ls",
-        "-q",
-        "--filter",
-        `label=com.docker.compose.project=${run.project}`,
-      ]);
-      assert.equal(volumes.stdout.trim(), "", "Volumes left behind");
-    }
-  } finally {
-    await stopProcesses(run, false);
-  }
-  if (run.disposable) await rm(location(run.id), { recursive: true });
-}
-// A foreground command keeps WSL alive. Pipe EOF also releases it if Node dies.
-async function startWsl(run: Manifest) {
-  if (process.platform !== "win32") return;
-  const marker = `webhook-recovery-${run.id}-wsl`;
-  const child = spawn(
-    "wsl",
-    [
-      "-d",
-      "Ubuntu",
-      "--exec",
-      "bash",
-      "--noprofile",
-      "--norc",
-      "-c",
-      "printf 'ready\\n'; read -r line",
-      marker,
-    ],
-    { windowsHide: true, stdio: ["pipe", "pipe", "pipe"] },
-  );
-  let ready = false;
-  child.stdout.on("data", (chunk: Buffer) => {
-    if (chunk.toString().includes("ready")) ready = true;
-  });
-  child.stderr.resume();
-  await new Promise<void>((resolve, reject) => {
-    child.once("spawn", resolve);
-    child.once("error", reject);
-  });
-  if (!child.pid) throw new Error("Missing WSL holder PID");
-  children.set(child.pid, child);
-  run.processes.push({ pid: child.pid, marker });
-  await save(run);
-  await until(async () => {
-    if (child.exitCode !== null) throw new Error("WSL foreground session exited during startup");
-    return ready;
-  });
-}
-async function startProcess(
-  run: Manifest,
-  name: string,
-  script: string,
-  overrides: Partial<
-    Record<
-      "RETRY_BASE_MS" | "WORKER_LEASE_MS" | "LAB_PAUSE_AT" | "LAB_PAUSE_INBOX" | "UI_PORT",
-      string
-    >
-  > = {},
-) {
-  const marker = `webhook-recovery-${run.id}-${name}`;
-  const log = createWriteStream(join(location(run.id), `${name}.log`), { flags: "w" });
-  const child = spawn(process.execPath, [`--title=${marker}`, "--import", "tsx", script], {
-    cwd: root,
-    env: { ...process.env, ...(await environment(run)), ...overrides },
-    windowsHide: true,
-    stdio: ["ignore", "pipe", "pipe", "ipc"],
-  });
-  let written = 0;
-  const record = (chunk: Buffer) => {
-    const bounded = chunk.subarray(0, Math.max(0, 1024 * 1024 - written));
-    if (bounded.length) log.write(bounded);
-    written += bounded.length;
-  };
-  if (!child.stdout || !child.stderr) throw new Error("Missing child output pipes");
-  child.stdout.on("data", record);
-  child.stderr.on("data", record);
-  child.once("close", () => log.end());
-  await new Promise<void>((resolve, reject) => {
-    child.once("spawn", resolve);
-    child.once("error", reject);
-  });
-  if (!child.pid) throw new Error("Missing child PID");
-  children.set(child.pid, child);
-  run.processes.push({ pid: child.pid, marker });
-  await save(run);
-  const readyEvent =
-    script === "src/worker.ts"
-      ? "worker_ready"
-      : script === "src/api.ts"
-        ? "api_ready"
-        : script === "web/dev.ts"
-          ? "console_ready"
-          : undefined;
-  if (readyEvent) {
-    const ready = `"pid":${child.pid}`;
-    await until(async () => {
-      if (child.exitCode !== null || child.signalCode !== null)
-        throw new Error(`Owned ${name} exited before readiness; inspect its bounded log`);
-      return (
-        await readFile(join(location(run.id), `${name}.log`), "utf8").catch((error: unknown) => {
-          if (error instanceof Error && "code" in error && error.code === "ENOENT") return "";
-          throw error;
-        })
-      )
-        .split("\n")
-        .some((line) => line.includes(`"event":"${readyEvent}"`) && line.includes(ready));
-    });
-  }
-  return child;
-}
-async function startConsole(run: Manifest) {
-  run.uiPort ??= run.id === "dev" ? 4330 : await availablePort();
-  await save(run);
-  await startProcess(run, "console", "web/dev.ts", { UI_PORT: String(run.uiPort) });
-  const base = `http://127.0.0.1:${run.uiPort}`;
-  await until(() => readyHttp(base));
-  return base;
-}
-async function startDatabase(id: string) {
-  await mkdir(location(id), { recursive: true });
-  const run: Manifest = {
-    id,
-    project: id === "dev" ? "webhook-recovery" : `webhook-recovery-verify-${id}`,
-    disposable: id !== "dev",
-    created: new Date().toISOString(),
-    processes: [],
-    containers: [],
-    volumes: [],
-    apiPort: id === "dev" ? 4331 : await availablePort(),
-  };
-  await save(run);
-  const password = randomBytes(24).toString("hex");
-  const subnet = await availableSubnet();
-  const composeEnv = join(location(id), "compose.env");
-  await writeFile(
-    composeEnv,
-    `DB_PASSWORD=${password}\nDB_NAME=webhook_recovery_${id === "dev" ? "dev" : "verify"}\nDB_PORT=${id === "dev" ? 55433 : 0}\nLAB_RUN=${id}\nLAB_SUBNET=${subnet}\n`,
-    { mode: 0o600 },
-  );
-  await restrictFile(composeEnv);
-  try {
-    await startWsl(run);
-    await compose(run, ["up", "-d", "--wait", "--wait-timeout", "60"]);
-    run.containers = (await compose(run, ["ps", "-q"])).stdout.trim().split(/\s+/).filter(Boolean);
-    run.volumes = (
-      await docker([
-        "volume",
-        "ls",
-        "-q",
-        "--filter",
-        `label=com.docker.compose.project=${run.project}`,
-      ])
-    ).stdout
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-    const published = (await compose(run, ["port", "postgres", "5432"])).stdout.trim();
-    const port = Number(published.split(":").at(-1));
-    const appEnv = join(location(id), "app.env");
-    await writeFile(
-      appEnv,
-      `DATABASE_URL=postgres://recovery:${password}@127.0.0.1:${port}/webhook_recovery_${id === "dev" ? "dev" : "verify"}\nAPI_PORT=${run.apiPort}\nDEMO_MODE=true\nSOURCE_SECRET=${randomBytes(24).toString("hex")}\nOPERATOR_TOKEN=${randomBytes(24).toString("hex")}\nVIEWER_TOKEN=${randomBytes(24).toString("hex")}\nLAB_RUN=${id}\nWORKER_LEASE_MS=30000\nMAX_ATTEMPTS=3\nRETRY_BASE_MS=1000\n`,
-      { mode: 0o600 },
-    );
-    await restrictFile(appEnv);
-    await save(run);
-    return run;
-  } catch (error) {
-    await cleanup(run);
-    throw error;
-  }
-}
 async function prepare(run: Manifest) {
   const config = configuration(await environment(run));
   const connection = database(config);
@@ -421,36 +92,6 @@ async function prepare(run: Manifest) {
   } finally {
     await connection.client.end();
   }
-}
-async function retainReports() {
-  const entries = await readdir(reports, { withFileTypes: true });
-  const files = await Promise.all(
-    entries
-      .filter((entry) => entry.isFile() && /^[a-f0-9]{16}\.json$/.test(entry.name))
-      .map(async (entry) => ({
-        path: join(reports, entry.name),
-        info: await stat(join(reports, entry.name)),
-      })),
-  );
-  files.sort((a, b) => b.info.mtimeMs - a.info.mtimeMs);
-  let size = 0;
-  const kept = new Set<string>();
-  for (const [index, file] of files.entries()) {
-    const imagePath = file.path.replace(/\.json$/, ".png");
-    const imageInfo = await stat(imagePath).catch(() => null);
-    size += file.info.size + (imageInfo?.size ?? 0);
-    if (index >= 5 || size > 100 * 1024 * 1024) {
-      await rm(file.path);
-      await rm(imagePath, { force: true });
-    } else kept.add(file.path.replace(/\.json$/, ""));
-  }
-  for (const entry of entries)
-    if (
-      entry.isFile() &&
-      /^[a-f0-9]{16}\.png$/.test(entry.name) &&
-      !kept.has(join(reports, entry.name.replace(/\.png$/, "")))
-    )
-      await rm(join(reports, entry.name));
 }
 async function diskBytes(path: string): Promise<number> {
   const entries = await readdir(path, { withFileTypes: true }).catch(() => []);
@@ -548,6 +189,9 @@ async function verify(mode: "verify" | "measure" = "verify") {
       report.checks.push("finite-workload-receipts-processing-and-completion-invariants");
       return;
     }
+    await verifySeedRoles(base, config);
+    await verifySeedRotation(base, config);
+    report.checks.push("seeded-credential-roles-rotation-and-retired-token-revocation");
     const accepted = await verifyIntake(base, config, async () => {
       await stopProcesses(currentRun);
       await startProcess(currentRun, "api", "src/api.ts");
@@ -660,8 +304,8 @@ async function verify(mode: "verify" | "measure" = "verify") {
   } finally {
     process.off("SIGINT", onSignal);
     process.off("SIGTERM", onSignal);
-    report.logs = (await readFile(join(location(id), "api.log"), "utf8").catch(() => "")).slice(
-      -16384,
+    report.logs = await readLogTail(join(location(id), "api.log"), 16384).catch(
+      () => "API diagnostics unavailable",
     );
     const workerLogs = (await readdir(location(id)).catch(() => []))
       .filter((name) => /^worker(?:-[a-z-]+)?\.log$/.test(name))
@@ -670,7 +314,7 @@ async function verify(mode: "verify" | "measure" = "verify") {
       await Promise.all(
         workerLogs.map(
           async (name) =>
-            `${name}\n${(await readFile(join(location(id), name), "utf8")).slice(-4096)}`,
+            `${name}\n${await readLogTail(join(location(id), name), 4096).catch(() => "Worker diagnostics unavailable")}`,
         ),
       )
     )
@@ -704,7 +348,7 @@ async function verify(mode: "verify" | "measure" = "verify") {
     } finally {
       await mkdir(reports, { recursive: true });
       await writeFile(join(reports, `${id}.json`), JSON.stringify(report, null, 2));
-      await retainReports();
+      await retainReports(reports);
       console.log(
         JSON.stringify({
           ...report,

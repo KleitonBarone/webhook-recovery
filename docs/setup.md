@@ -26,7 +26,8 @@ networks, disposable volumes, and private credential files. It exits nonzero if
 verification or cleanup fails. CI uses the same commands and Compose definition.
 
 Reports are in `.local/reports/<run-id>.json`. Keep at most five reports and 100 MiB
-of scratch output. Per-process logs are capped at 1 MiB; container logs rotate at
+of scratch output. Per-process logs rotate across two 512-KiB segments within a
+1-MiB budget, retaining recent output; container logs rotate at
 10 MiB with two files. Reports retain bounded failure output. Selected engineering
 evidence is copied to documented deliverables before scratch report rotation.
 
@@ -76,6 +77,10 @@ Ctrl+C stops development services and preserves the database. From another shell
 `pnpm db:migrate`, and `pnpm db:seed` manage the retained development environment.
 Starting development or explicitly running `db:seed` renews the configured demo
 sessions for 24 hours. An expired session stays denied until that seed action.
+Seeding atomically reconciles the configured signing secrets, credential roles,
+and source bindings. Other sessions for the two demo sources expire immediately,
+including retired credentials. After editing credentials in the retained
+`app.env`, run `pnpm db:seed` and sign in with the updated credential.
 Source, operator, and viewer credentials must be distinct. Generated worker
 settings live in the private `app.env`, so unrelated shell settings cannot change
 an isolated run. Adjust retained development settings there when needed.
@@ -97,6 +102,10 @@ pruning or WSL shutdown to recover a test run. Pre-existing networks are preserv
 even if their address pools prevent automatic subnet allocation.
 `env:status` also reports registered process ownership, API/console ports, and
 scratch bytes so leftover runs are visible before another verification starts.
+The manifest records Compose intent before provisioning. A failure or interruption
+before that intent is written can be cleaned without Docker or credential files.
+Lifecycle management is in `scripts/lifecycle.ts`; `scripts/lab.ts` dispatches
+commands and scenarios, and `scripts/bounded-log.ts` handles log retention.
 
 The pinned PostgreSQL image and one pnpm dependency tree are reused during work.
 No custom image builds or builders are required. Temporary containers and volumes

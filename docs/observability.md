@@ -37,6 +37,8 @@ transaction boundary. Direct integration calls may bypass worker observation.
 
 Run `pnpm verify` for real HTTP/PostgreSQL checks, including synthetic markers in
 query strings, headers, login bodies, and failure messages. The tests also verify
-that safe SQLSTATE information remains useful. Run-owned process logs are capped
-at 1 MiB; reports retain bounded tails and rotate to five reports within 100 MiB.
+that safe SQLSTATE information remains useful. Run-owned process logs rotate
+between the current `.log` and `.log.previous`, each capped at 512 KiB.
+Reports read the recent tail across both segments and rotate to five reports
+within 100 MiB.
 See [setup and cleanup](setup.md) and [crash evidence](scenarios.md).
