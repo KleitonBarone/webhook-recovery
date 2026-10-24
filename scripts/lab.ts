@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { copyFile, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, rmdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { type } from "arktype";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
@@ -405,12 +405,23 @@ else if (command === "check") {
   const optionIndex = process.argv.indexOf("--run");
   const id = optionIndex < 0 ? undefined : process.argv[optionIndex + 1];
   if (!id || id === "dev") throw new Error("Provide --run <disposable-run-id>");
-  const found = await readFile(join(location(id), "manifest.json"), "utf8").catch(() => null);
+  const found = await readFile(join(location(id), "manifest.json"), "utf8").catch(
+    (error: unknown) => {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return null;
+      throw error;
+    },
+  );
   if (found) {
     const run = await load(id);
     if (command === "demo-reset" && (await environment(run)).DEMO_MODE !== "true")
       throw new Error("Reset requires an explicitly disposable demo environment");
     await cleanup(run);
+  } else {
+    // Without a manifest, only an empty directory is safe to remove.
+    await rmdir(location(id)).catch((error: unknown) => {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") return;
+      throw error;
+    });
   }
   console.log(
     command === "demo-reset"

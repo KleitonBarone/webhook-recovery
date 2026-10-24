@@ -105,6 +105,8 @@ even if their address pools prevent automatic subnet allocation.
 scratch bytes so leftover runs are visible before another verification starts.
 The manifest records Compose intent before provisioning. A failure or interruption
 before that intent is written can be cleaned without Docker or credential files.
+If startup stops before creating a manifest, cleanup removes the empty run directory.
+A nonempty directory without a manifest returns an error and preserves its files.
 Lifecycle management is in `scripts/lifecycle.ts`; `scripts/lab.ts` dispatches
 commands and scenarios, and `scripts/bounded-log.ts` handles log retention.
 

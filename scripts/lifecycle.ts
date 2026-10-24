@@ -100,6 +100,7 @@ export async function ownedProcess(pid: number, marker: string) {
   return command.includes(marker);
 }
 export async function stopProcesses(run: Manifest, preserveWsl = true) {
+  if (run.processes.length === 0) return;
   for (const child of [...run.processes].reverse()) {
     if (!child.marker.startsWith(`webhook-recovery-${run.id}-`))
       throw new Error("Process ownership mismatch");
@@ -320,7 +321,6 @@ export async function startConsole(run: Manifest) {
   return base;
 }
 export async function startDatabase(id: string, allocateSubnet = availableSubnet) {
-  await mkdir(location(id), { recursive: true });
   const run: Manifest = {
     id,
     project: id === "dev" ? "webhook-recovery" : `webhook-recovery-verify-${id}`,
@@ -332,8 +332,9 @@ export async function startDatabase(id: string, allocateSubnet = availableSubnet
     apiPort: id === "dev" ? 4331 : await availablePort(),
     composeStarted: false,
   };
-  await save(run);
+  await mkdir(location(id), { recursive: true });
   try {
+    await save(run);
     const password = randomBytes(24).toString("hex");
     const subnet = await allocateSubnet();
     const composeEnv = join(location(id), "compose.env");

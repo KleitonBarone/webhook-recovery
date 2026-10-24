@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
-import { access, mkdir, rm } from "node:fs/promises";
+import { access, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { location, save, startDatabase } from "../scripts/lifecycle.js";
@@ -45,6 +45,29 @@ test("CLI cleanup recovers a partial run before Compose or credential files exis
       cwd: root,
     });
     await assert.rejects(access(path), { code: "ENOENT" });
+  } finally {
+    await rm(path, { recursive: true, force: true });
+  }
+});
+
+test("CLI cleanup removes only empty runs when their manifest is missing", async () => {
+  const id = randomBytes(8).toString("hex");
+  const path = location(id);
+  assert.equal(path, join(root, ".local", "runs", id));
+  const cleanup = () =>
+    execute(process.execPath, ["--import", "tsx", "scripts/lab.ts", "cleanup", "--run", id], {
+      cwd: root,
+    });
+  await mkdir(path);
+  try {
+    await cleanup();
+    await assert.rejects(access(path), { code: "ENOENT" });
+    await cleanup();
+    await mkdir(path);
+    const retained = join(path, "unknown.txt");
+    await writeFile(retained, "Preserve this file");
+    await assert.rejects(cleanup());
+    assert.equal(await readFile(retained, "utf8"), "Preserve this file");
   } finally {
     await rm(path, { recursive: true, force: true });
   }
