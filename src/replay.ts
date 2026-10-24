@@ -34,11 +34,11 @@ export async function replayEvent(
       eq(replayRequests.operatorId, scope.operatorId),
       eq(replayRequests.idempotencyKey, input.idempotencyKey),
     );
-    function original(found: typeof replayRequests.$inferSelect) {
-      if (found.inboxId !== id || found.reason !== reason)
+    const original = (found: typeof replayRequests.$inferSelect) => {
+      if (found.inboxId !== event.id || found.reason !== reason)
         throw new RequestError(409, "Replay key already used with different content");
       return found;
-    }
+    };
     const [existing] = await tx.select().from(replayRequests).where(key).limit(1);
     if (existing) return { replay: original(existing), duplicate: true };
     if (event.state !== "dead_lettered")
@@ -47,7 +47,7 @@ export async function replayEvent(
       .insert(replayRequests)
       .values({
         ...scope,
-        inboxId: id,
+        inboxId: event.id,
         idempotencyKey: input.idempotencyKey,
         reason,
         cycleNumber: event.cycleNumber + 1,
@@ -72,12 +72,12 @@ export async function replayEvent(
         cycleAttempt: 0,
         currentReplayId: created.id,
       })
-      .where(eq(inbox.id, id));
+      .where(eq(inbox.id, event.id));
     return { replay: created, duplicate: false };
   });
   observe(result.duplicate ? "replay_duplicate" : "replay_requested", {
     sourceId: scope.sourceId,
-    inboxId: id,
+    inboxId: result.replay.inboxId,
     replayId: result.replay.id,
     cycleNumber: result.replay.cycleNumber,
   });

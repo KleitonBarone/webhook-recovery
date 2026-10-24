@@ -34,8 +34,12 @@ export async function verifyReplay(base: string, config: Configuration) {
     assert.ok(owned);
     assert.equal(owned.event.id, accepted.id);
     assert.equal((await processClaim(connection, owned, config)).state, "dead_lettered");
-    async function replay(body = input, token: string | null = config.operatorToken) {
-      return fetch(`${base}/api/events/${accepted.id}/replay`, {
+    async function replay(
+      body = input,
+      token: string | null = config.operatorToken,
+      id = accepted.id,
+    ) {
+      return fetch(`${base}/api/events/${id}/replay`, {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -48,7 +52,11 @@ export async function verifyReplay(base: string, config: Configuration) {
     assert.equal((await replay(input, null)).status, 401);
     assert.equal((await replay(input, config.viewerToken)).status, 403);
     assert.equal((await connection.db.select().from(replayRequests)).length, 0);
-    const responses = await Promise.all(Array.from({ length: 12 }, () => replay()));
+    const responses = await Promise.all(
+      Array.from({ length: 12 }, (_, index) =>
+        replay(input, config.operatorToken, index % 2 ? accepted.id.toUpperCase() : accepted.id),
+      ),
+    );
     const receipts = await Promise.all(
       responses.map(async (response) => {
         assert.equal(response.status, 202);
@@ -96,6 +104,9 @@ export async function verifyReplay(base: string, config: Configuration) {
       1,
     );
     assert.deepEqual(ReplayResponse.assert(await (await replay()).json()), first);
+    const uppercaseRetry = await replay(input, config.operatorToken, accepted.id.toUpperCase());
+    assert.equal(uppercaseRetry.status, 202);
+    assert.deepEqual(ReplayResponse.assert(await uppercaseRetry.json()), first);
     assert.equal((await replay({ ...input, idempotencyKey: randomUUID() })).status, 409);
     assert.deepEqual(
       Receipt.assert(await (await send(base, config.sourceSecret, JSON.stringify(payload))).json()),
