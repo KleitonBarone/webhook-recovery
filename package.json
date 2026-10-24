@@ -1,6 +1,7 @@
 {
   "name": "webhook-recovery",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@11.23.0",
   "engines": {

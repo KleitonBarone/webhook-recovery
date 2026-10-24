@@ -5,19 +5,23 @@ These are actual local console recordings from
 events and PostgreSQL in WSL. English explanatory captions are burned into the
 video. The recordings are silent. There is no human voice or impersonation.
 
-The video files are preserved outside Git:
+Download the [public recordings and captions](https://github.com/KleitonBarone/webhook-recovery/releases/tag/walkthrough-2026-10-19).
+The video files are hosted as release assets outside Git history:
 
-| Recording | Local file | Accompanying text |
+| Recording | Video | Accompanying text |
 | --- | --- | --- |
-| Recovery overview, 82 seconds | `C:/Users/admin/Videos/webhook-recovery/2026-10-19-bebc97e/overview.mp4` | [Transcript](evidence/overview.md), [SRT](evidence/overview.srt) |
-| Engineering and worker termination, 172 seconds | `C:/Users/admin/Videos/webhook-recovery/2026-10-19-bebc97e/engineering.mp4` | [Transcript](evidence/engineering.md), [SRT](evidence/engineering.srt) |
+| Recovery overview, 82 seconds | [overview.mp4](https://github.com/KleitonBarone/webhook-recovery/releases/download/walkthrough-2026-10-19/overview.mp4) | [Transcript](evidence/overview.md), [SRT](evidence/overview.srt) |
+| Engineering and worker termination, 172 seconds | [engineering.mp4](https://github.com/KleitonBarone/webhook-recovery/releases/download/walkthrough-2026-10-19/engineering.mp4) | [Transcript](evidence/engineering.md), [SRT](evidence/engineering.srt) |
 
 [Artifact checksums and media metadata](evidence/walkthrough-artifacts.json)
 identify the exact files, dimensions, codec, duration, source revision, and
-recording script. They are local deliverables, not hosted public video links.
-The original WebM files, recording script, process logs, and rehearsal command
-logs are preserved in the same directory. The final documentation changes do
-not change the demonstrated implementation.
+recording script. Published MP4s have the same checksums as the originals. The
+original WebM files, recording script, process logs, and rehearsal command logs
+are also preserved locally at `C:/Users/admin/Videos/webhook-recovery/2026-10-19-bebc97e`.
+Later maintenance on main fixes credential changes, partial startup cleanup,
+log rotation, and repair feedback. These recordings demonstrate the pinned
+revision above; the signed intake and recovery transaction boundaries remain
+the same.
 
 ## Recovery overview
 

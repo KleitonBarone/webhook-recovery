@@ -55,7 +55,8 @@ architecture diagrams. The [scenario guide](docs/scenarios.md) documents actual
 before/after-commit worker termination and resumed-owner fencing. The
 [recovery runbook](docs/recovery.md) explains retries and audited replay.
 
-The [recorded walkthroughs](docs/walkthrough.md) include English captions,
+The [public recordings](https://github.com/KleitonBarone/webhook-recovery/releases/tag/walkthrough-2026-10-19)
+and [walkthrough guide](docs/walkthrough.md) include English captions,
 screenshots, and raw crash proof. The [fresh-checkout rehearsal](docs/rehearsal.md)
 records working commands and matching before/after resource inventories.
 [Delivery history](DELIVERY.md) links the merged implementation PRs and checks.
@@ -76,3 +77,5 @@ protocol. The finite lab retains deduplication identities without expiry.
 No provider account, customer traffic, public endpoint, or hosting is required.
 [Webhook Redrive](https://github.com/KleitonBarone/webhook-redrive) is the separate
 outbound sender; integrating it is optional. This repository runs independently.
+
+Licensed under [MIT](LICENSE).
