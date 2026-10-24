@@ -26,3 +26,10 @@ test("configuration rejects remote or unrelated databases and invalid ports", ()
   assert.throws(() => configuration({ ...env, RETRY_BASE_MS: "99" }));
   assert.throws(() => configuration({}));
 });
+
+test("configured operator and viewer credentials fit the login API limit", () => {
+  for (const field of ["OPERATOR_TOKEN", "VIEWER_TOKEN"] as const) {
+    assert.doesNotThrow(() => configuration({ ...env, [field]: "a".repeat(256) }));
+    assert.throws(() => configuration({ ...env, [field]: "a".repeat(257) }));
+  }
+});

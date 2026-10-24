@@ -81,7 +81,8 @@ Seeding atomically reconciles the configured signing secrets, credential roles,
 and source bindings. Other sessions for the two demo sources expire immediately,
 including retired credentials. After editing credentials in the retained
 `app.env`, run `pnpm db:seed` and sign in with the updated credential.
-Source, operator, and viewer credentials must be distinct. Generated worker
+Source, operator, and viewer credentials must be distinct. Operator and viewer
+credentials must contain 24 to 256 characters, matching the login API. Generated worker
 settings live in the private `app.env`, so unrelated shell settings cannot change
 an isolated run. Adjust retained development settings there when needed.
 On Windows, `db:up` also stays in the foreground to hold its WSL session; keep that
