@@ -139,7 +139,7 @@ export function EventActions({ detail, session }: { detail: Detail; session: Ses
           <button
             type="button"
             className="quiet-button"
-            disabled={busy || !dead}
+            disabled={busy || !dead || detail.event.reason === "equal_version_conflict"}
             onClick={() => repair.mutate()}
           >
             Repair demo cause
@@ -153,7 +153,9 @@ export function EventActions({ detail, session }: { detail: Detail; session: Ses
       )}
       {repair.isSuccess && (
         <p role="status" className="help">
-          Demo cause repaired. Request replay to start a new cycle.
+          {repair.data?.repaired
+            ? "Demo cause repaired. Request replay to start a new cycle."
+            : "No synthetic fault was found. Inspect the failure reason before requesting replay."}
         </p>
       )}
       <form

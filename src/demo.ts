@@ -67,15 +67,16 @@ export function demoRoutes(app: FastifyInstance, connection: Database) {
       if (!Empty.allows(request.body ?? {}))
         throw new RequestError(400, "This action takes no payload");
       const event = await eventForOperator(connection, session.sourceId, request.params.id);
-      await connection.db
+      const removed = await connection.db
         .delete(syntheticFaults)
         .where(
           and(
             eq(syntheticFaults.sourceId, session.sourceId),
             eq(syntheticFaults.refundId, event.payload.refundId),
           ),
-        );
-      return { repaired: true, refundId: event.payload.refundId };
+        )
+        .returning({ refundId: syntheticFaults.refundId });
+      return { repaired: removed.length > 0, refundId: event.payload.refundId };
     },
   );
 }

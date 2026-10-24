@@ -72,6 +72,12 @@ export async function verifyBrowser(
       await expect(
         page.getByText("Demo cause repaired. Request replay to start a new cycle."),
       ).toBeVisible();
+      await page.getByRole("button", { name: "Repair demo cause" }).click();
+      await expect(
+        page.getByText(
+          "No synthetic fault was found. Inspect the failure reason before requesting replay.",
+        ),
+      ).toBeVisible();
       const reason = "Repaired the local sample handler after inspecting exhausted retries";
       await page.getByLabel("Replay reason").fill(reason);
       await page.getByRole("button", { name: "Request replay" }).click();

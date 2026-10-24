@@ -3,7 +3,7 @@ import { type } from "arktype";
 import { eq } from "drizzle-orm";
 import type { Configuration } from "../src/config.js";
 import { Receipt } from "../src/contract.js";
-import { database } from "../src/database.js";
+import { database, seedDatabase } from "../src/database.js";
 import { sessions, sources } from "../src/schema.js";
 
 export async function verifyOperator(
@@ -83,7 +83,7 @@ export async function verifyOperator(
     assert.equal((await fetch(`${base}/api/events`, { headers: auth })).status, 401);
   } finally {
     await connection.db.update(sources).set({ enabled: true }).where(eq(sources.id, "demo"));
-    await connection.db.update(sessions).set({ expiresAt: new Date(Date.now() + 86400000) });
+    await seedDatabase(connection, config);
     await connection.client.end();
   }
 }

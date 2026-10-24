@@ -91,6 +91,12 @@ export async function verifyDemo(base: string, config: Configuration) {
     const success = await sample("success");
     const succeeded = await finished(success.id, "processed");
     assert.equal(succeeded.completions.length, 1);
+    const nothingToRepair = await post(`/api/demo/events/${success.id}/repair`);
+    assert.equal(nothingToRepair.status, 200);
+    assert.equal(
+      type({ repaired: "boolean" }).assert(await nothingToRepair.json()).repaired,
+      false,
+    );
     const transient = await sample("transient");
     const retried = await finished(transient.id, "processed");
     assert.deepEqual(
@@ -135,6 +141,11 @@ export async function verifyDemo(base: string, config: Configuration) {
     }
     assert.equal((await detail(permanent.id)).attempts.length, 1);
     assert.equal((await post(`/api/demo/events/${permanent.id}/repair`)).status, 200);
+    const alreadyRepaired = await post(`/api/demo/events/${permanent.id}/repair`);
+    assert.equal(
+      type({ repaired: "boolean" }).assert(await alreadyRepaired.json()).repaired,
+      false,
+    );
     assert.equal((await detail(permanent.id)).event.state, "dead_lettered");
     const replay = await post(`/api/events/${permanent.id}/replay`, {
       idempotencyKey: randomUUID(),

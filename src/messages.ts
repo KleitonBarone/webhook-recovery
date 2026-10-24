@@ -87,5 +87,5 @@ export const ReplayPage = type({ items: ReplayRecord.array(), nextOffset: "numbe
 export const FixtureResponse = type({ receipt: Receipt });
 export const DemoScenario = type.enumerated("success", "transient", "permanent", "exhausted");
 export type DemoScenario = typeof DemoScenario.infer;
-export const RepairResponse = type({ repaired: "true", refundId: "string" });
+export const RepairResponse = type({ repaired: "boolean", refundId: "string" });
 export const ReplayResponse = type({ replay: ReplayRecord });
