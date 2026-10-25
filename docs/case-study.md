@@ -126,8 +126,8 @@ owns a Windows-to-WSL session, bounds logs/reports, and removes disposable servi
 volumes, browser profiles, and credentials. Repeated success, injected failure,
 interruption, actual coordinator termination, and repeated cleanup were exercised.
 Retained developer data and pre-existing Docker resources stay outside disposable
-cleanup. A Windows reader-lock test reproduces and guards the manifest replacement
-failure found during that rehearsal.
+cleanup. A Windows reader-lock test checks manifest replacement when another
+process briefly holds the file open.
 
 ## Limits
 

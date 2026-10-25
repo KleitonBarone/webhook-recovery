@@ -57,9 +57,7 @@ before/after-commit worker termination and resumed-owner fencing. The
 
 The [public recordings](https://github.com/KleitonBarone/webhook-recovery/releases/tag/walkthrough-2026-10-19)
 and [walkthrough guide](docs/walkthrough.md) include English captions,
-screenshots, and raw crash proof. The [fresh-checkout rehearsal](docs/rehearsal.md)
-records working commands and matching before/after resource inventories.
-[Delivery history](DELIVERY.md) links the merged implementation PRs and checks.
+screenshots, and raw crash proof.
 
 ## Measurements and limits
 

@@ -15,9 +15,7 @@ The video files are hosted as release assets outside Git history:
 
 [Artifact checksums and media metadata](evidence/walkthrough-artifacts.json)
 identify the exact files, dimensions, codec, duration, source revision, and
-recording script. Published MP4s have the same checksums as the originals. The
-original WebM files, recording script, process logs, and rehearsal command logs
-are also preserved locally at `C:/Users/admin/Videos/webhook-recovery/2026-10-19-bebc97e`.
+recording script. Published MP4s have the same checksums as the originals.
 Later maintenance on main fixes credential changes, partial startup cleanup,
 log rotation, and repair feedback. These recordings demonstrate the pinned
 revision above; the signed intake and recovery transaction boundaries remain
@@ -66,5 +64,4 @@ account, or payment API is involved. The guarantee covers one local database;
 external effects require a separate idempotency design.
 
 Repeat the correctness proof with `pnpm verify`. Repeat the operator story using
-the controls described in [setup](setup.md). The [rehearsal](rehearsal.md) records
-the clean installation and cleanup results.
+the controls described in [setup](setup.md).
