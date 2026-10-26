@@ -9,6 +9,7 @@ import {
   type Session,
 } from "../../src/messages.ts";
 import { api, HttpError, json } from "./http.ts";
+import { Icon, type IconName } from "./Icon.tsx";
 import { browserDemo } from "./mode.ts";
 
 function useRefresh() {
@@ -31,17 +32,18 @@ function ActionError({ error }: { error: Error | null }) {
           className="quiet-button"
           onClick={() => void client.resetQueries({ queryKey: ["session"] })}
         >
+          <Icon name="login" />
           Sign in again
         </button>
       )}
     </div>
   );
 }
-const samples: { scenario: DemoScenario; label: string }[] = [
-  { scenario: "success", label: "Successful event" },
-  { scenario: "transient", label: "Temporary failure" },
-  { scenario: "permanent", label: "Permanent failure" },
-  { scenario: "exhausted", label: "Exhaust retries" },
+const samples: { scenario: DemoScenario; label: string; icon: IconName }[] = [
+  { scenario: "success", label: "Successful event", icon: "success" },
+  { scenario: "transient", label: "Temporary failure", icon: "clock" },
+  { scenario: "permanent", label: "Permanent failure", icon: "stop" },
+  { scenario: "exhausted", label: "Exhaust retries", icon: "hourglass" },
 ];
 export function DemoTools({ select }: { select: (id: string) => void }) {
   const refresh = useRefresh();
@@ -70,6 +72,7 @@ export function DemoTools({ select }: { select: (id: string) => void }) {
             disabled={send.isPending}
             onClick={() => send.mutate(sample.scenario)}
           >
+            <Icon name={sample.icon} />
             {sample.label}
           </button>
         ))}
@@ -139,6 +142,7 @@ export function EventActions({ detail, session }: { detail: Detail; session: Ses
             disabled={busy}
             onClick={() => redeliver.mutate()}
           >
+            <Icon name="send" />
             Redeliver original
           </button>
           <button
@@ -147,6 +151,7 @@ export function EventActions({ detail, session }: { detail: Detail; session: Ses
             disabled={busy || !dead || detail.event.reason === "equal_version_conflict"}
             onClick={() => repair.mutate()}
           >
+            <Icon name="repair" />
             Repair demo cause
           </button>
         </div>
@@ -189,6 +194,7 @@ export function EventActions({ detail, session }: { detail: Detail; session: Ses
           className="primary"
           disabled={busy || !dead || !reason.trim() || replay.isSuccess}
         >
+          <Icon name="replay" />
           {replay.isPending ? "Requesting replay…" : "Request replay"}
         </button>
       </form>

@@ -138,6 +138,17 @@ button {
   font-size: 14px;
 }
 .quiet-button,
+.primary,
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.action-icon {
+  flex-shrink: 0;
+}
+.quiet-button,
 .back-button {
   background: transparent;
   color: #315bb5;
@@ -376,6 +387,7 @@ time {
 }
 .section-heading {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
@@ -636,7 +648,7 @@ time {
     display: none;
   }
   .back-button {
-    display: inline-block;
+    display: inline-flex;
     margin-left: -8px;
   }
   .detail-content {

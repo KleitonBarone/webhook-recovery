@@ -11,6 +11,7 @@ import {
 } from "../../src/messages.ts";
 import { DemoTools, EventActions } from "./Actions.tsx";
 import { api, HttpError, json } from "./http.ts";
+import { Icon } from "./Icon.tsx";
 import { browserDemo } from "./mode.ts";
 
 export const stateLabels: Record<State, string> = {
@@ -41,6 +42,7 @@ function Failure({ error, retry }: { error: Error; retry?: () => void }) {
       <p>{error.message}</p>
       {retry && (
         <button className="quiet-button" type="button" onClick={retry}>
+          <Icon name="refresh" />
           Try again
         </button>
       )}
@@ -106,6 +108,7 @@ function SignIn() {
             Use the credential from your local environment. Viewer access is read only.
           </p>
           <button className="primary" type="submit" disabled={login.isPending}>
+            <Icon name="login" />
             {login.isPending ? "Signing in…" : "Sign in"}
           </button>
           {login.error && <Failure error={login.error} />}
@@ -194,6 +197,7 @@ function Workbench({ session }: { session: Session }) {
           )}
           {browserDemo ? (
             <button className="quiet-button" type="button" onClick={() => location.reload()}>
+              <Icon name="reset" />
               Reset demo
             </button>
           ) : (
@@ -203,6 +207,7 @@ function Workbench({ session }: { session: Session }) {
               onClick={() => logout.mutate()}
               disabled={logout.isPending}
             >
+              <Icon name="logout" />
               Sign out
             </button>
           )}
@@ -228,19 +233,7 @@ function Workbench({ session }: { session: Session }) {
             aria-label="Explore the source on GitHub, opens in a new tab"
           >
             Explore the source
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M7 17 17 7M7 7h10v10" />
-            </svg>
+            <Icon name="external" />
           </a>
         </aside>
       )}
@@ -258,6 +251,7 @@ function Workbench({ session }: { session: Session }) {
               aria-label="Refresh inbox"
               onClick={() => void events.refetch()}
             >
+              <Icon name="refresh" />
               Refresh
             </button>
           </div>
@@ -323,6 +317,7 @@ function Workbench({ session }: { session: Session }) {
               disabled={offset === 0 || events.isFetching}
               onClick={() => setOffset(Math.max(0, offset - 20))}
             >
+              <Icon name="chevronLeft" />
               Newer
             </button>
             <span>Page {offset / 20 + 1}</span>
@@ -335,6 +330,7 @@ function Workbench({ session }: { session: Session }) {
               }}
             >
               Older
+              <Icon name="chevronRight" />
             </button>
           </div>
         </section>
@@ -399,6 +395,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
     return (
       <div className="detail-content">
         <button className="back-button" type="button" onClick={back}>
+          <Icon name="arrowLeft" />
           Back to inbox
         </button>
         <p role="status">Loading event…</p>
@@ -408,6 +405,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
     return (
       <div className="detail-content">
         <button className="back-button" type="button" onClick={back}>
+          <Icon name="arrowLeft" />
           Back to inbox
         </button>
         <Failure error={detail.error} retry={() => void detail.refetch()} />
@@ -421,6 +419,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
   return (
     <div className="detail-content">
       <button className="back-button" type="button" onClick={back}>
+        <Icon name="arrowLeft" />
         Back to inbox
       </button>
       <div className="detail-title">
@@ -448,6 +447,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
               .catch(() => setCopied(false));
           }}
         >
+          <Icon name={copied ? "check" : "copy"} />
           {copied ? "Receipt ID copied" : "Copy receipt ID"}
         </button>
       </div>
@@ -509,6 +509,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
           <h3>Processing attempts</h3>
           {attemptOffset !== null && (
             <button type="button" className="quiet-button" onClick={() => setAttemptOffset(null)}>
+              <Icon name="chevronUp" />
               Latest attempts
             </button>
           )}
@@ -555,6 +556,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
               )
             }
           >
+            <Icon name="chevronDown" />
             Load older attempts
           </button>
         )}
@@ -564,6 +566,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
           <h3>Replay audit</h3>
           {replayOffset !== null && (
             <button type="button" className="quiet-button" onClick={() => setReplayOffset(null)}>
+              <Icon name="chevronUp" />
               Latest replay requests
             </button>
           )}
@@ -599,6 +602,7 @@ function EventView({ id, session, back }: { id: string; session: Session; back: 
               )
             }
           >
+            <Icon name="chevronDown" />
             Load older replay requests
           </button>
         )}
