@@ -753,6 +753,9 @@ time {
   margin-top: 6px;
 }
 .demo-intro a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
   color: #315bb5;
   font-weight: 600;

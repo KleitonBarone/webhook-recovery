@@ -221,7 +221,27 @@ function Workbench({ session }: { session: Session }) {
               worker recovery.
             </p>
           </div>
-          <a href="https://github.com/KleitonBarone/webhook-recovery">Explore the source</a>
+          <a
+            href="https://github.com/KleitonBarone/webhook-recovery"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Explore the source on GitHub, opens in a new tab"
+          >
+            Explore the source
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M7 17 17 7M7 7h10v10" />
+            </svg>
+          </a>
         </aside>
       )}
       <main className={`workspace ${selected ? "has-selection" : ""}`}>
