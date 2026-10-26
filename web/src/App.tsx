@@ -11,6 +11,7 @@ import {
 } from "../../src/messages.ts";
 import { DemoTools, EventActions } from "./Actions.tsx";
 import { api, HttpError, json } from "./http.ts";
+import { browserDemo } from "./mode.ts";
 
 export const stateLabels: Record<State, string> = {
   received: "Queued",
@@ -140,7 +141,7 @@ export function App() {
 function Workbench({ session }: { session: Session }) {
   const client = useQueryClient();
   const [selected, setSelected] = useState<string | null>(() =>
-    new URLSearchParams(location.search).get("event"),
+    browserDemo ? null : new URLSearchParams(location.search).get("event"),
   );
   const [filter, setFilter] = useState<State | "all">("all");
   const [offset, setOffset] = useState(0);
@@ -169,6 +170,7 @@ function Workbench({ session }: { session: Session }) {
   });
   function select(id: string | null) {
     setSelected(id);
+    if (browserDemo) return;
     const url = new URL(location.href);
     if (id) url.searchParams.set("event", id);
     else url.searchParams.delete("event");
@@ -179,19 +181,49 @@ function Workbench({ session }: { session: Session }) {
       <header className="topbar">
         <Brand />
         <div className="session-info">
-          <span className="source">{session.sourceId}</span>
-          <span className="role">{session.role === "viewer" ? "Viewer" : "Operator"}</span>
-          {session.demo && <span className="local-mode">Local demo</span>}
-          <button
-            className="quiet-button"
-            type="button"
-            onClick={() => logout.mutate()}
-            disabled={logout.isPending}
-          >
-            Sign out
-          </button>
+          {!browserDemo && (
+            <>
+              <span className="source">{session.sourceId}</span>
+              <span className="role">{session.role === "viewer" ? "Viewer" : "Operator"}</span>
+            </>
+          )}
+          {session.demo && (
+            <span className="local-mode">
+              {browserDemo ? "Interactive simulation" : "Local demo"}
+            </span>
+          )}
+          {browserDemo ? (
+            <button className="quiet-button" type="button" onClick={() => location.reload()}>
+              Reset demo
+            </button>
+          ) : (
+            <button
+              className="quiet-button"
+              type="button"
+              onClick={() => logout.mutate()}
+              disabled={logout.isPending}
+            >
+              Sign out
+            </button>
+          )}
         </div>
       </header>
+      {browserDemo && (
+        <aside className="demo-intro" aria-label="About this demo">
+          <div>
+            <h1>Every failure has a history. Follow the recovery.</h1>
+            <p>
+              Select a sample marked Needs attention, repair its cause, then request replay.
+              Everything runs in this tab and resets on refresh.
+            </p>
+            <p className="help">
+              Processing and persistence are simulated. The full project tests real PostgreSQL and
+              worker recovery.
+            </p>
+          </div>
+          <a href="https://github.com/KleitonBarone/webhook-recovery">Explore the source</a>
+        </aside>
+      )}
       <main className={`workspace ${selected ? "has-selection" : ""}`}>
         <section className="inbox-pane" aria-label="Inbox">
           {session.demo && session.role === "operator" && <DemoTools select={select} />}
@@ -236,7 +268,11 @@ function Workbench({ session }: { session: Session }) {
           ) : events.data.items.length === 0 ? (
             <div className="empty-list">
               <h2>No events in this view</h2>
-              <p>Send a signed sample from the local sender, or choose another state.</p>
+              <p>
+                {browserDemo
+                  ? "Send a sample above, or choose another state."
+                  : "Send a signed sample from the local sender, or choose another state."}
+              </p>
             </div>
           ) : (
             <ul className="event-list">

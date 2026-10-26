@@ -9,6 +9,7 @@ import {
   type Session,
 } from "../../src/messages.ts";
 import { api, HttpError, json } from "./http.ts";
+import { browserDemo } from "./mode.ts";
 
 function useRefresh() {
   const client = useQueryClient();
@@ -53,9 +54,13 @@ export function DemoTools({ select }: { select: (id: string) => void }) {
     },
   });
   return (
-    <section className="demo-tools" aria-label="Local simulator">
+    <section className="demo-tools" aria-label={browserDemo ? "Demo samples" : "Local simulator"}>
       <h2>Send a sample</h2>
-      <p className="help">Signed fictional events for this local source.</p>
+      <p className="help">
+        {browserDemo
+          ? "Fictional events with simulated processing."
+          : "Signed fictional events for this local source."}
+      </p>
       <div className="sample-buttons">
         {samples.map((sample) => (
           <button

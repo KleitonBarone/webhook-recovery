@@ -734,3 +734,41 @@ time {
   font-size: 13px;
   margin-top: 22px;
 }
+.demo-intro {
+  max-width: 1380px;
+  margin: 28px auto 0;
+  padding: 0 26px;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+}
+.demo-intro h1 {
+  font-size: 26px;
+  color: #244983;
+  margin-bottom: 10px;
+}
+.demo-intro p {
+  max-width: 76ch;
+  margin-top: 6px;
+}
+.demo-intro a {
+  flex-shrink: 0;
+  color: #315bb5;
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+@media (max-width: 740px) {
+  .demo-intro {
+    flex-direction: column;
+    padding: 0 20px;
+    margin-top: 20px;
+    gap: 12px;
+  }
+  .demo-intro h1 {
+    font-size: 24px;
+  }
+  .demo-intro + .workspace {
+    margin-top: 20px;
+  }
+}

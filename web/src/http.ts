@@ -1,11 +1,7 @@
-export class HttpError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
-}
+import { HttpError } from "./errors.ts";
+import { browserDemo } from "./mode.ts";
+
+export { HttpError } from "./errors.ts";
 
 // Validate every JSON response before the UI uses it.
 export async function api<T>(
@@ -13,11 +9,13 @@ export async function api<T>(
   schema: { assert(value: unknown): T },
   init: RequestInit = {},
 ) {
-  const response = await fetch(`/api${path}`, {
-    credentials: "same-origin",
-    signal: AbortSignal.timeout(15000),
-    ...init,
-  });
+  const response = browserDemo
+    ? await (await import("./demo/transport.ts")).demoRequest(path, init)
+    : await fetch(`/api${path}`, {
+        credentials: "same-origin",
+        signal: AbortSignal.timeout(15000),
+        ...init,
+      });
   const value: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const message =

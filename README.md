@@ -1,17 +1,32 @@
 # Webhook recovery
 
-A local webhook inbox for investigating failed processing and recovering it
+A webhook inbox for investigating failed processing and recovering it
 without losing the original event. Send a signed fictional refund update, inspect
 its durable acceptance receipt, follow each processing attempt, and replay a failed
 cycle with an audited reason.
 
-This is an engineering lab for developers evaluating durable receivers. A `202`
-response proves acceptance. The console shows whether processing later succeeded,
-scheduled a retry, ignored an older snapshot, or needs operator attention.
+This is an engineering lab for developers evaluating durable receivers. In the
+full backend, a `202` response proves acceptance. The console shows whether
+processing later succeeded, scheduled a retry, ignored an older snapshot, or needs
+operator attention.
 
 ![Recovered event with preserved acceptance and processing history](docs/evidence/recovered.png)
 
-## Try it locally
+## Try the browser demo
+
+The interactive simulation runs entirely in your browser, with no login, database,
+or worker. It reuses the console with fictional events and resets on refresh.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm demo
+```
+
+Open http://127.0.0.1:4173, select a failed event, repair its cause, and request replay.
+The [demo guide](docs/demo.md) covers the static build, browser verification, and
+deployment to Vercel on your own subdomain.
+
+## Run the full lab
 
 Use Node 24.20.0, pnpm 11.23.0, and Docker Engine with Compose. On Windows, Docker
 runs through WSL Ubuntu while Node and dependencies stay on Windows. The

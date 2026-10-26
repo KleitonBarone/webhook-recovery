@@ -6,6 +6,10 @@
   "scripts": {
     "check": "tsc --noEmit",
     "build": "vite build",
+    "build:demo": "vite build --mode demo",
+    "dev:demo": "vite --mode demo",
+    "preview:demo": "vite preview --mode demo",
+    "verify:demo": "node --import tsx verify-demo.ts",
     "dev": "tsx dev.ts"
   },
   "dependencies": {

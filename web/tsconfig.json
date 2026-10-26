@@ -9,5 +9,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "dev.ts", "vite.config.ts", "../src/messages.ts"]
+  "include": ["src", "dev.ts", "verify-demo.ts", "vite.config.ts", "../src/messages.ts"]
 }
