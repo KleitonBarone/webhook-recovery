@@ -26,7 +26,9 @@ textarea {
 }
 button {
   cursor: pointer;
-  transition: background-color 0.12s;
+  transition:
+    background-color 0.12s,
+    border-color 0.12s;
 }
 button:disabled {
   cursor: default;
@@ -144,24 +146,35 @@ button {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 40px;
+  border: 1px solid transparent;
+  line-height: 1.35;
 }
 .action-icon {
   flex-shrink: 0;
 }
 .quiet-button,
 .back-button {
-  background: transparent;
+  background: white;
+  border-color: #8096b5;
   color: #315bb5;
   font-weight: 600;
   font-size: 13px;
-  padding: 8px;
-  border-radius: 5px;
+  padding: 9px 12px;
+  border-radius: 6px;
 }
 .quiet-button:hover:not(:disabled),
-.back-button:hover {
+.back-button:hover:not(:disabled) {
   background: #edf2fb;
+  border-color: #315bb5;
+}
+.quiet-button:active:not(:disabled),
+.back-button:active:not(:disabled) {
+  background: #e0e9fc;
+  border-color: #244983;
 }
 .primary {
+  min-height: 44px;
   border-radius: 6px;
   padding: 11px 18px;
   background: #315bb5;
@@ -170,6 +183,9 @@ button {
 }
 .primary:hover:not(:disabled) {
   background: #244892;
+}
+.primary:active:not(:disabled) {
+  background: #1b3974;
 }
 .filter-label {
   display: block;
@@ -269,6 +285,7 @@ time {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   border-top: 1px solid #dce5f0;
   padding: 10px 14px;
   font-size: 12px;
@@ -315,7 +332,9 @@ time {
   border-top: 1px solid #e1e7f0;
 }
 .acceptance .quiet-button {
+  flex-shrink: 0;
   margin-left: auto;
+  white-space: nowrap;
 }
 .acceptance-check {
   display: grid;
@@ -620,6 +639,10 @@ time {
   }
 }
 @media (max-width: 740px) {
+  .quiet-button,
+  .back-button {
+    min-height: 44px;
+  }
   .topbar {
     align-items: start;
     flex-direction: column;
@@ -649,7 +672,6 @@ time {
   }
   .back-button {
     display: inline-flex;
-    margin-left: -8px;
   }
   .detail-content {
     padding: 20px;
@@ -658,7 +680,7 @@ time {
     flex-wrap: wrap;
   }
   .acceptance .quiet-button {
-    margin-left: 34px;
+    margin-left: 42px;
   }
   .identifier {
     margin-left: 0;
@@ -696,16 +718,20 @@ time {
   font-size: 16px;
   margin: 0 0 5px;
 }
-.sample-buttons,
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 8px;
 }
 .sample-buttons {
-  margin-left: -8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
 }
 .sample-buttons button {
+  justify-content: flex-start;
+  padding: 9px 8px;
   text-align: left;
 }
 .recovery-actions {
